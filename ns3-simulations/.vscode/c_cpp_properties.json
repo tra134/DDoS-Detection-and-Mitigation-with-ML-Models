@@ -1,0 +1,34 @@
+{
+  "configurations": [
+    {
+      "name": "Linux",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "/home/traphan/ns-3-dev/build/include/ns3",
+        "/home/traphan/ns-3-dev/build/include",
+        "/home/traphan/ns-3-dev/src/core",
+        "/home/traphan/ns-3-dev/src/network", 
+        "/home/traphan/ns-3-dev/src/internet",
+        "/home/traphan/ns-3-dev/src/applications",
+        "/home/traphan/ns-3-dev/src/wifi",
+        "/home/traphan/ns-3-dev/src/mobility",
+        "/home/traphan/ns-3-dev/src/point-to-point",
+        "/home/traphan/ns-3-dev/src/flow-monitor",
+        "/home/traphan/ns-3-dev/src/netanim",
+        "/usr/include",
+        "/usr/include/c++/11",
+        "/usr/include/x86_64-linux-gnu/c++/11"
+      ],
+      "defines": [
+        "NS3_LOG_ENABLE",
+        "NS3_ASSERT_ENABLE"
+      ],
+      "compilerPath": "/usr/bin/g++",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "linux-gcc-x64",
+      "configurationProvider": "ms-vscode.makefile-tools"
+    }
+  ],
+  "version": 4
+}
