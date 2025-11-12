@@ -25,6 +25,8 @@ find_library(NS3_MOBILITY_LIB ns3-dev-mobility PATHS ${NS3_LIB_DIR})
 find_library(NS3_POINT_TO_POINT_LIB ns3-dev-point-to-point PATHS ${NS3_LIB_DIR})
 find_library(NS3_FLOW_MONITOR_LIB ns3-dev-flow-monitor PATHS ${NS3_LIB_DIR})
 find_library(NS3_NETANIM_LIB ns3-dev-netanim PATHS ${NS3_LIB_DIR})
+find_library(NS3_STATS_LIB ns3-dev-stats PATHS ${NS3_LIB_DIR})
+find_library(NS3_GNUPLOT_LIB ns3-dev-gnuplot PATHS ${NS3_LIB_DIR})
 
 # Add executable
 add_executable(ddos-simulator src/ddos-simulator.cc)
@@ -40,5 +42,7 @@ target_link_libraries(ddos-simulator
     ${NS3_POINT_TO_POINT_LIB}
     ${NS3_FLOW_MONITOR_LIB}
     ${NS3_NETANIM_LIB}
+    ${NS3_STATS_LIB}
+    ${NS3_GNUPLOT_LIB}
     pthread rt
 )
