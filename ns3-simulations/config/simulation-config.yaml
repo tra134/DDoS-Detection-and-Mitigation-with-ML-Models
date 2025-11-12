@@ -1,0 +1,43 @@
+simulation:
+  base:
+    iot_nodes: 20
+    attackers: 5
+    simulation_time: 60.0
+    enable_netanim: true
+    random_seed: 42
+    
+  network:
+    wifi_standard: "802.11n"
+    data_rate: "54Mbps"
+    p2p_data_rate: "100Mbps"
+    p2p_delay: "2ms"
+    
+  applications:
+    normal_traffic:
+      data_rate: "50kbps"
+      packet_size: 128
+      on_time: "Exponential[2.0]"
+      off_time: "Exponential[1.0]"
+    
+    attack_traffic:
+      data_rate: "5000kbps"
+      packet_size: 1024
+      on_time: "Constant[100]"
+      off_time: "Constant[0]"
+      attack_start: 15.0
+    
+  mobility:
+    iot_nodes:
+      area: "150x150"
+      grid_size: 5
+      speed: "Constant[2.0]"
+    base_stations:
+      positions: ["25,50", "75,50"]
+    server:
+      position: "50,50"
+    
+  output:
+    animation_file: "ddos-animation.xml"
+    stats_file: "realtime_stats.csv"
+    detailed_results: "ns3_detailed_results.csv"
+    gnuplot_data: "ddos_data.dat"

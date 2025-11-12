@@ -1,0 +1,19 @@
+# -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
+
+def build(bld):
+    module = bld.create_ns3_module('ddos-simulator', ['core', 'network', 'internet', 'applications', 'wifi', 'mobility', 'flow-monitor', 'point-to-point', 'netanim', 'csma'])
+    
+    module.source = [
+        'src/ddos-simulator.cc',
+    ]
+    
+    # Headers
+    module.headers = [
+    ]
+    
+    # Tests
+    module_test = bld.create_ns3_module_test_library('ddos-simulator')
+    module_test.source = [
+    ]
+    
+    bld.ns3_python_bindings()

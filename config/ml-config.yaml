@@ -1,0 +1,65 @@
+model:
+  name: "ddos_detection_ensemble"
+  version: "1.0"
+  threshold: 0.85
+  
+training:
+  test_size: 0.2
+  random_state: 42
+  cv_folds: 5
+  models:
+    - name: "Random Forest"
+      params:
+        n_estimators: 100
+        max_depth: 20
+        random_state: 42
+        
+    - name: "Decision Tree"
+      params:
+        max_depth: 15
+        random_state: 42
+        
+    - name: "K-Neighbors"
+      params:
+        n_neighbors: 5
+        weights: "distance"
+
+features:
+  network:
+    - "packet_length"
+    - "protocol_type"
+    - "ttl"
+    - "tcp_flags"
+    - "source_port"
+    - "destination_port"
+    
+  statistical:
+    - "packet_rate"
+    - "byte_rate"
+    - "packet_size_variance"
+    - "port_entropy"
+    - "flow_duration"
+    
+  temporal:
+    - "time_between_packets"
+    - "burst_detection"
+    - "seasonal_patterns"
+
+detection:
+  realtime:
+    packet_buffer_size: 1000
+    stats_window_size: 100
+    check_interval: 5
+    confidence_threshold: 0.8
+    
+  mitigation:
+    block_threshold: 100
+    port_scan_threshold: 20
+    max_blocked_ips: 5
+    rate_limit_normal: "1000kbps"
+    rate_limit_suspicious: "100kbps"
+
+output:
+  model_path: "models/ddos_model.pkl"
+  performance_report: "results/model_performance.json"
+  feature_importance: "results/feature_importance.png"

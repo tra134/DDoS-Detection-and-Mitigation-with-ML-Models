@@ -1,0 +1,32 @@
+project:
+  name: "ddos-detection-project"
+  base_path: "/home/traphan/ns-3-dev/ddos-project-new"
+  ns3_path: "/home/traphan/ns-3-dev"
+
+simulation:
+  node_configs:
+    - nodes: 10
+      attackers: 3
+    - nodes: 20
+      attackers: 5
+    - nodes: 30
+      attackers: 7
+  duration: 60
+
+models:
+  decision_tree:
+    max_depth: 10
+    min_samples_split: 2
+    min_samples_leaf: 1
+    random_state: 42
+
+  cnn:
+    epochs: 10
+    batch_size: 32
+    learning_rate: 0.001
+    early_stopping_patience: 5
+
+optimization:
+  woa_ssa:
+    population_size: 10
+    max_iterations: 20

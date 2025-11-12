@@ -1,0 +1,49 @@
+# NS3 Simulation
+ns3-simulations/results/
+*.pcap
+*.xml
+
+# Models
+models/*.pkl
+models/*.joblib
+models/*.h5
+
+# Data
+data/raw/
+data/processed/
+*.csv
+*.dat
+
+# Logs
+logs/*.log
+*.log
+
+# Environment
+ddos-env/
+venv/
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
+
+# NetAnim
+*.png
