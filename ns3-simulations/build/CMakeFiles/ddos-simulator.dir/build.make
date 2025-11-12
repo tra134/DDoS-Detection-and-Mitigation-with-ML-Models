@@ -101,6 +101,7 @@ ddos-simulator: /home/traphan/ns-3-dev/build/lib/libns3-dev-mobility.so
 ddos-simulator: /home/traphan/ns-3-dev/build/lib/libns3-dev-point-to-point.so
 ddos-simulator: /home/traphan/ns-3-dev/build/lib/libns3-dev-flow-monitor.so
 ddos-simulator: /home/traphan/ns-3-dev/build/lib/libns3-dev-netanim.so
+ddos-simulator: /home/traphan/ns-3-dev/build/lib/libns3-dev-stats.so
 ddos-simulator: CMakeFiles/ddos-simulator.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/traphan/ns-3-dev/ddos-project-new/ns3-simulations/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable ddos-simulator"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/ddos-simulator.dir/link.txt --verbose=$(VERBOSE)

@@ -1721,6 +1721,4 @@ CMakeFiles/ddos-simulator.dir/src/ddos-simulator.cc.o: \
  /home/traphan/ns-3-dev/src/uan/model/uan-mac.h \
  /home/traphan/ns-3-dev/src/uan/model/uan-prop-model.h \
  /home/traphan/ns-3-dev/src/uan/model/uan-transducer.h \
- /home/traphan/ns-3-dev/src/uan/model/uan-tx-mode.h \
- /home/traphan/ns-3-dev/build/include/ns3/gnuplot.h \
- /home/traphan/ns-3-dev/src/stats/model/gnuplot.h
+ /home/traphan/ns-3-dev/src/uan/model/uan-tx-mode.h

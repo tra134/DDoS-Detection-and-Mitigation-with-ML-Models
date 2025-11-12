@@ -1796,12 +1796,8 @@ CMakeFiles/ddos-simulator.dir/src/ddos-simulator.cc.o: /home/traphan/ns-3-dev/dd
   /home/traphan/ns-3-dev/src/uan/model/uan-mac.h \
   /home/traphan/ns-3-dev/src/uan/model/uan-prop-model.h \
   /home/traphan/ns-3-dev/src/uan/model/uan-transducer.h \
-  /home/traphan/ns-3-dev/src/uan/model/uan-tx-mode.h \
-  /home/traphan/ns-3-dev/build/include/ns3/gnuplot.h \
-  /home/traphan/ns-3-dev/src/stats/model/gnuplot.h
+  /home/traphan/ns-3-dev/src/uan/model/uan-tx-mode.h
 
-
-/home/traphan/ns-3-dev/build/include/ns3/gnuplot.h:
 
 /home/traphan/ns-3-dev/src/uan/model/uan-mac.h:
 
@@ -3584,8 +3580,6 @@ CMakeFiles/ddos-simulator.dir/src/ddos-simulator.cc.o: /home/traphan/ns-3-dev/dd
 /usr/include/c++/12/bits/exception_ptr.h:
 
 /home/traphan/ns-3-dev/build/include/ns3/example-as-test.h:
-
-/home/traphan/ns-3-dev/src/stats/model/gnuplot.h:
 
 /usr/include/c++/12/bits/hash_bytes.h:
 

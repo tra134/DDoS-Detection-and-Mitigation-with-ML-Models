@@ -7,20 +7,21 @@
 #include "ns3/flow-monitor-module.h"
 #include "ns3/point-to-point-module.h"
 #include "ns3/netanim-module.h" // NetAnim support
-#include "ns3/gnuplot.h"
 #include <fstream>
 #include <vector>
 #include <sstream>
-#include <map> // Thêm vào cho Gnuplot
+#include <map> 
 
-// <<< SỬA: Chỉ cần 1 thư viện này >>>
-#include <set> // Dùng cho blacklist
+// <<< VÔ HIỆU HÓA GNUPLOT >>>
+// #include "ns3/gnuplot.h" 
+
+// <<< THÊM THƯ VIỆN ĐỂ CHẶN IP >>>
+#include <set> 
 
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("DDoSSimulator");
 
-// <<< SỬA: Chữ ký hàm (signature) của PacketDropCallback đã thay đổi >>>
 class DDoSSimulator
 {
 public:
@@ -38,9 +39,7 @@ private:
 
     Ipv4InterfaceContainer m_staInterfaces;
     Ipv4Address m_serverIp;
-
-    // <<< SỬA: Thêm m_apDevices để lưu trữ NetDeviceContainer >>>
-    NetDeviceContainer m_apDevices; 
+    NetDeviceContainer m_apDevices; // Lưu NetDevice của AP
 
     std::vector<uint32_t> m_attackerIndices;
     std::vector<Ipv4Address> m_attackerIps;
@@ -64,12 +63,15 @@ private:
     void SetupDDoSAttack();
     void SetupNetAnim();
     void CollectStatistics();
-    void ExportToGnuplot();
+    
+    // <<< VÔ HIỆU HÓA GNUPLOT >>>
+    // void ExportToGnuplot(); 
+    
     void SetupMitigation();
     void MonitorLiveFlows();
     void CheckForBlacklistUpdates();
     
-    // <<< SỬA: Chữ ký hàm (signature) mới cho callback NetDevice >>>
+    // Chữ ký hàm (signature) mới cho callback NetDevice
     bool PacketDropCallback(
         Ptr<NetDevice> device, 
         Ptr<const Packet> packet, 
@@ -79,7 +81,7 @@ private:
 };
 
 // =================================================================
-// === CÁC HÀM TRIỂN KHAI (Giữ nguyên) ===
+// === CÁC HÀM TRIỂN KHAI ===
 // =================================================================
 
 DDoSSimulator::DDoSSimulator(uint32_t nIotNodes, uint32_t nAttackers, double simTime)
@@ -142,10 +144,8 @@ void DDoSSimulator::SetupMobility()
     mobility.Install(m_serverNode);
 }
 
-// <<< SỬA: Hàm này cần gán cho m_apDevices >>>
 void DDoSSimulator::SetupNetwork()
 {
-    // Setup WiFi
     WifiHelper wifi;
     wifi.SetStandard(WIFI_STANDARD_80211n);
     WifiMacHelper wifiMac;
@@ -154,13 +154,12 @@ void DDoSSimulator::SetupNetwork()
     wifiPhy.SetChannel(wifiChannel.Create());
 
     wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(Ssid("ddos-network")));
-    // <<< SỬA: Gán vào biến thành viên m_apDevices >>>
+    // Gán vào biến thành viên m_apDevices
     m_apDevices = wifi.Install(wifiPhy, wifiMac, m_baseStations);
 
     wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(Ssid("ddos-network")));
     NetDeviceContainer staDevices = wifi.Install(wifiPhy, wifiMac, m_iotNodes);
 
-    // Setup point-to-point
     PointToPointHelper p2p;
     p2p.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
     p2p.SetChannelAttribute("Delay", StringValue("2ms"));
@@ -168,20 +167,17 @@ void DDoSSimulator::SetupNetwork()
     NetDeviceContainer p2pDevices1 = p2p.Install(m_baseStations.Get(0), m_serverNode.Get(0));
     NetDeviceContainer p2pDevices2 = p2p.Install(m_baseStations.Get(1), m_serverNode.Get(0));
 
-    // Install internet stack
     InternetStackHelper stack;
     stack.Install(m_allNodes);
 
-    // Assign IP addresses
     Ipv4AddressHelper address;
-
     address.SetBase("10.1.1.0", "255.255.255.0");
-    m_staInterfaces = address.Assign(staDevices); // Lưu lại
+    m_staInterfaces = address.Assign(staDevices); 
     address.Assign(m_apDevices); // Gán IP cho APs
 
     address.SetBase("10.1.2.0", "255.255.255.0");
     Ipv4InterfaceContainer p2pInterfaces1 = address.Assign(p2pDevices1);
-    m_serverIp = p2pInterfaces1.GetAddress(1); // Lưu IP server
+    m_serverIp = p2pInterfaces1.GetAddress(1); 
 
     address.SetBase("10.1.3.0", "255.255.255.0");
     address.Assign(p2pDevices2);
@@ -205,7 +201,7 @@ void DDoSSimulator::SetupApplications()
         if (std::find(m_attackerIndices.begin(), m_attackerIndices.end(), i) !=
             m_attackerIndices.end())
         {
-            continue; // Bỏ qua kẻ tấn công
+            continue; 
         }
         OnOffHelper onOffHelper("ns3::UdpSocketFactory",
                                 InetSocketAddress(m_serverIp, serverPort));
@@ -387,10 +383,14 @@ void DDoSSimulator::CollectStatistics()
     NS_LOG_INFO("Real-time stats written to realtime_stats.csv");
     NS_LOG_INFO("NetAnim animation: ddos-animation.xml");
 
-    ExportToGnuplot();
+    // <<< VÔ HIỆU HÓA GNUPLOT >>>
+    // ExportToGnuplot(); 
+    
     Simulator::Destroy();
 }
 
+// <<< VÔ HIỆU HÓA TOÀN BỘ HÀM GNUPLOT >>>
+/*
 void DDoSSimulator::ExportToGnuplot()
 {
     NS_LOG_INFO("Exporting data to Gnuplot format...");
@@ -408,8 +408,9 @@ void DDoSSimulator::ExportToGnuplot()
     statsFile.close();
     NS_LOG_INFO("Gnuplot data written to ddos_data.dat");
 }
+*/
 
-// <<< SỬA: Hàm Run() được cập nhật >>>
+// <<< HÀM RUN() ĐÃ CẬP NHẬT >>>
 void DDoSSimulator::Run()
 {
     CreateNodes();
@@ -418,38 +419,26 @@ void DDoSSimulator::Run()
     SetupApplications();
     SetupDDoSAttack();
     SetupNetAnim();
-    
-    // Cài đặt hook và lên lịch cho các hàm mitigation
     SetupMitigation(); 
-
-    // Hàm này sẽ CÀI MONITOR và gọi SIMULATOR::RUN()
     CollectStatistics();
 }
-
 
 // =================================================================
 // <<< CÁC HÀM MỚI CHO VIỆC GIẢM THIỂU (MITIGATION) - ĐÃ SỬA LỖI >>>
 // =================================================================
 
-/**
- * @brief Cài đặt bộ lọc (hook) trên các Base Station
- * và lên lịch cho các tác vụ giám sát/cập nhật.
- */
 void DDoSSimulator::SetupMitigation()
 {
     NS_LOG_INFO("Setting up Mitigation (NetDevice Callback)...");
 
-    // <<< SỬA: Sử dụng API SetReceiveCallback trên các AP NetDevices >>>
-    // Chúng ta đã lưu 'm_apDevices' trong hàm SetupNetwork
+    // Sử dụng API SetReceiveCallback trên các AP NetDevices
     for (uint32_t i = 0; i < m_apDevices.GetN(); ++i)
     {
-        // Gắn callback vào NetDevice của AP
         m_apDevices.Get(i)->SetReceiveCallback(
             MakeCallback(&DDoSSimulator::PacketDropCallback, this)
         );
     }
 
-    // Mở file CSV mà Python sẽ đọc (xóa file cũ nếu có)
     m_liveStatsFile.open("live_flow_stats.csv", std::ofstream::out | std::ofstream::trunc);
     m_liveStatsFile 
         << "time,source_ip,protocol,tx_packets,rx_packets,tx_bytes,rx_bytes,"
@@ -457,32 +446,22 @@ void DDoSSimulator::SetupMitigation()
         << "throughput,flow_duration,label\n";
     m_liveStatsFile.close();
 
-    // Lên lịch cho các hàm chạy lặp lại
     Simulator::Schedule(Seconds(1.0), &DDoSSimulator::MonitorLiveFlows, this);
     Simulator::Schedule(Seconds(1.5), &DDoSSimulator::CheckForBlacklistUpdates, this);
 }
 
-/**
- * @brief HÀM LỌC GÓI TIN (THE ENFORCER) - ĐÃ SỬA LỖI
- * Được gọi bởi hook trên Base Station cho mỗi gói tin.
- */
-// <<< SỬA: Chữ ký hàm mới và kiểu trả về 'bool' >>>
 bool DDoSSimulator::PacketDropCallback(
     Ptr<NetDevice> device, Ptr<const Packet> packet, uint16_t protocol, const Address& from)
 {
-    // Cần sao chép packet để có thể 'loại bỏ' header một cách an toàn
     Ptr<Packet> p_copy = packet->Copy();
     Ipv4Header header;
     
     // 0x0800 là EtherType (mã giao thức) cho IPv4
     if (protocol == 0x0800) 
     {
-        // Lấy header IP
         if (p_copy->PeekHeader(header))
         {
             Ipv4Address sourceIp = header.GetSource();
-
-            // Kiểm tra xem IP nguồn có trong blacklist không
             if (m_blockedIps.count(sourceIp))
             {
                 NS_LOG_WARN("MITIGATION: Dropped packet from blocked IP: " << sourceIp);
@@ -490,14 +469,9 @@ bool DDoSSimulator::PacketDropCallback(
             }
         }
     }
-
     return true; // Chấp nhận gói (cho phép xử lý)
 }
 
-/**
- * @brief HÀM GIÁM SÁT (THE MONITOR) - ĐÃ SỬA LỖI TYPO
- * Chạy mỗi giây, tính toán delta của flow và ghi ra file live_flow_stats.csv.
- */
 void DDoSSimulator::MonitorLiveFlows()
 {
     if (Simulator::Now().GetSeconds() > m_simTime) return; 
@@ -520,7 +494,6 @@ void DDoSSimulator::MonitorLiveFlows()
     {
         FlowId flowId = it->first;
         FlowMonitor::FlowStats currentStats = it->second;
-
         FlowMonitor::FlowStats deltaStats;
         deltaStats.txPackets = currentStats.txPackets - m_lastFlowStats[flowId].txPackets;
 
@@ -529,29 +502,23 @@ void DDoSSimulator::MonitorLiveFlows()
             deltaStats.rxPackets = currentStats.rxPackets - m_lastFlowStats[flowId].rxPackets;
             deltaStats.txBytes = currentStats.txBytes - m_lastFlowStats[flowId].txBytes;
             deltaStats.rxBytes = currentStats.rxBytes - m_lastFlowStats[flowId].rxBytes;
-
-            // <<< SỬA: Sửa lỗi typo 'need' thành 'flowId' >>>
             deltaStats.delaySum = currentStats.delaySum - m_lastFlowStats[flowId].delaySum;
             deltaStats.jitterSum = currentStats.jitterSum - m_lastFlowStats[flowId].jitterSum;
             deltaStats.lostPackets = currentStats.lostPackets - m_lastFlowStats[flowId].lostPackets;
 
             double flowDuration = 1.0; 
             double throughput = (deltaStats.rxBytes * 8.0) / (flowDuration * 1000.0); // Kbps
-            
             double packetLossRatio = 0.0;
             if ((deltaStats.txPackets + deltaStats.lostPackets) > 0)
             {
                 packetLossRatio = (deltaStats.lostPackets) / (double)(deltaStats.txPackets + deltaStats.lostPackets);
             }
-
             Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow(flowId);
-
             bool isAttack = false;
             for (const auto& attackerIp : m_attackerIps)
             {
                 if (t.sourceAddress == attackerIp) { isAttack = true; break; }
             }
-
             m_liveStatsFile
                 << Simulator::Now().GetSeconds() << ","
                 << t.sourceAddress << "," << (int)t.protocol << ","
@@ -561,19 +528,12 @@ void DDoSSimulator::MonitorLiveFlows()
                 << deltaStats.lostPackets << "," << packetLossRatio << ","
                 << throughput << "," << flowDuration << "," << (isAttack ? 1 : 0) << "\n";
         }
-        
-        m_lastFlowStats[flowId] = currentStats; // Cập nhật 'lastStats'
+        m_lastFlowStats[flowId] = currentStats; 
     }
-
     m_liveStatsFile.close();
-    
     Simulator::Schedule(Seconds(1.0), &DDoSSimulator::MonitorLiveFlows, this);
 }
 
-/**
- * @brief HÀM LẮNG NGHE (THE LISTENER) - ĐÃ SỬA LỖI TYPO
- * Chạy mỗi 0.5s, kiểm tra file blacklist.txt
- */
 void DDoSSimulator::CheckForBlacklistUpdates()
 {
     if (Simulator::Now().GetSeconds() > m_simTime) return;
@@ -585,11 +545,8 @@ void DDoSSimulator::CheckForBlacklistUpdates()
         while (std::getline(blacklistFile, ipString))
         {
             if (ipString.empty()) continue;
-            
             Ipv4Address ip;
-            // <<< SỬA: Sửa lỗi typo 'c_tpr' thành 'c_str' >>>
             ip.Set(ipString.c_str()); 
-
             if (m_blockedIps.insert(ip).second)
             {
                 NS_LOG_INFO("MITIGATION: Đã nhận lệnh chặn IP mới: " << ip);
@@ -597,7 +554,6 @@ void DDoSSimulator::CheckForBlacklistUpdates()
         }
         blacklistFile.close();
     }
-
     Simulator::Schedule(Seconds(0.5), &DDoSSimulator::CheckForBlacklistUpdates, this);
 }
 
