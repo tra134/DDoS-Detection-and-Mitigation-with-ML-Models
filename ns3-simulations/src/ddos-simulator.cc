@@ -11,12 +11,8 @@
 #include <vector>
 #include <sstream>
 #include <map> 
-
-// <<< VÔ HIỆU HÓA GNUPLOT >>>
-// #include "ns3/gnuplot.h" 
-
-// <<< THÊM THƯ VIỆN ĐỂ CHẶN IP >>>
 #include <set> 
+#include <iostream> // Dùng cho std::cout
 
 using namespace ns3;
 
@@ -39,7 +35,7 @@ private:
 
     Ipv4InterfaceContainer m_staInterfaces;
     Ipv4Address m_serverIp;
-    NetDeviceContainer m_apDevices; // Lưu NetDevice của AP
+    NetDeviceContainer m_apDevices; 
 
     std::vector<uint32_t> m_attackerIndices;
     std::vector<Ipv4Address> m_attackerIps;
@@ -48,12 +44,16 @@ private:
     Ptr<FlowMonitor> m_monitor;
 
     std::ofstream m_statsFile; 
-    std::map<FlowId, uint32_t> m_lastTxPackets; 
+
+    // <<< SỬA: Biến riêng cho CollectStatistics >>>
+    std::map<FlowId, uint32_t> m_lastTxPackets_realtime; 
 
     // --- Biến cho Mitigation ---
     std::ofstream m_liveStatsFile; 
     std::set<Ipv4Address> m_blockedIps; 
-    std::map<FlowId, FlowMonitor::FlowStats> m_lastFlowStats; 
+
+    // <<< THÊM: Biến riêng cho MonitorLiveFlows >>>
+    std::map<FlowId, uint32_t> m_lastTxPackets_live;
 
     // --- Các hàm ---
     void CreateNodes();
@@ -64,14 +64,13 @@ private:
     void SetupNetAnim();
     void CollectStatistics();
     
-    // <<< VÔ HIỆU HÓA GNUPLOT >>>
+    // (gnuplot đã bị vô hiệu hóa)
     // void ExportToGnuplot(); 
     
     void SetupMitigation();
     void MonitorLiveFlows();
     void CheckForBlacklistUpdates();
     
-    // Chữ ký hàm (signature) mới cho callback NetDevice
     bool PacketDropCallback(
         Ptr<NetDevice> device, 
         Ptr<const Packet> packet, 
@@ -81,7 +80,9 @@ private:
 };
 
 // =================================================================
-// === CÁC HÀM TRIỂN KHAI ===
+// === CÁC HÀM TRIỂN KHAI (Giữ nguyên) ===
+// (CreateNodes, SetupMobility, SetupNetwork, SetupApplications,
+//  SetupDDoSAttack, SetupNetAnim)
 // =================================================================
 
 DDoSSimulator::DDoSSimulator(uint32_t nIotNodes, uint32_t nAttackers, double simTime)
@@ -96,7 +97,6 @@ void DDoSSimulator::CreateNodes()
     m_iotNodes.Create(m_nIotNodes);
     m_baseStations.Create(2);
     m_serverNode.Create(1);
-
     m_allNodes.Add(m_iotNodes);
     m_allNodes.Add(m_baseStations);
     m_allNodes.Add(m_serverNode);
@@ -154,7 +154,6 @@ void DDoSSimulator::SetupNetwork()
     wifiPhy.SetChannel(wifiChannel.Create());
 
     wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(Ssid("ddos-network")));
-    // Gán vào biến thành viên m_apDevices
     m_apDevices = wifi.Install(wifiPhy, wifiMac, m_baseStations);
 
     wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(Ssid("ddos-network")));
@@ -173,7 +172,7 @@ void DDoSSimulator::SetupNetwork()
     Ipv4AddressHelper address;
     address.SetBase("10.1.1.0", "255.255.255.0");
     m_staInterfaces = address.Assign(staDevices); 
-    address.Assign(m_apDevices); // Gán IP cho APs
+    address.Assign(m_apDevices); 
 
     address.SetBase("10.1.2.0", "255.255.255.0");
     Ipv4InterfaceContainer p2pInterfaces1 = address.Assign(p2pDevices1);
@@ -269,7 +268,10 @@ void DDoSSimulator::CollectStatistics()
 {
     NS_LOG_INFO("Collecting simulation statistics...");
     m_monitor = m_flowMonHelper.InstallAll(); 
-    m_statsFile.open("realtime_stats.csv");
+    
+    // <<< SỬA: Ghi file vào /data/raw/ >>>
+    m_statsFile.open("/home/traphan/ns-3-dev/ddos-project-new/data/raw/realtime_stats.csv",
+                     std::ofstream::out | std::ofstream::trunc); 
     m_statsFile << "time,normal_packets,attack_packets,total_throughput,avg_delay\n";
 
     for (double t = 0.0; t <= m_simTime; t += 1.0)
@@ -306,12 +308,17 @@ void DDoSSimulator::CollectStatistics()
                                             break;
                                         }
                                     }
+                                    
                                     uint32_t packetsNow = it->second.txPackets;
-                                    uint32_t packetsLast = m_lastTxPackets[it->first]; 
+                                    // <<< SỬA: Dùng biến riêng 'm_lastTxPackets_realtime' >>>
+                                    uint32_t packetsLast = m_lastTxPackets_realtime[it->first]; 
                                     uint32_t deltaPackets = (packetsNow > packetsLast) ? (packetsNow - packetsLast) : 0;
+                                    
                                     if (isAttackFlow) currentAttackPackets += deltaPackets;
                                     else currentNormalPackets += deltaPackets;
-                                    m_lastTxPackets[it->first] = packetsNow;
+                                    
+                                    // <<< SỬA: Cập nhật vào biến riêng 'm_lastTxPackets_realtime' >>>
+                                    m_lastTxPackets_realtime[it->first] = packetsNow;
                                 }
                                 double avgDelay = (flowCount > 0) ? totalDelay / flowCount : 0;
                                 m_statsFile << t << "," << currentNormalPackets << ","
@@ -332,7 +339,10 @@ void DDoSSimulator::CollectStatistics()
 
     FlowMonitor::FlowStatsContainer stats = m_monitor->GetFlowStats();
     std::ofstream resultsFile;
-    resultsFile.open("ns3_detailed_results.csv");
+
+    // <<< SỬA: Ghi file vào /data/raw/ >>>
+    resultsFile.open("/home/traphan/ns-3-dev/ddos-project-new/data/raw/ns3_detailed_results.csv",
+                     std::ofstream::out | std::ofstream::trunc); 
     resultsFile << "flow_id,source_ip,destination_ip,protocol,tx_packets,rx_packets,"
                 << "tx_bytes,rx_bytes,delay_sum,jitter_sum,lost_packets,packet_loss_ratio,"
                 << "throughput,flow_duration,label\n";
@@ -379,38 +389,14 @@ void DDoSSimulator::CollectStatistics()
     else
         NS_LOG_INFO("  No packets transmitted.");
 
-    NS_LOG_INFO("Results written to ns3_detailed_results.csv");
-    NS_LOG_INFO("Real-time stats written to realtime_stats.csv");
+    NS_LOG_INFO("Results written to /data/raw/ns3_detailed_results.csv");
+    NS_LOG_INFO("Real-time stats written to /data/raw/realtime_stats.csv");
     NS_LOG_INFO("NetAnim animation: ddos-animation.xml");
-
-    // <<< VÔ HIỆU HÓA GNUPLOT >>>
-    // ExportToGnuplot(); 
     
     Simulator::Destroy();
 }
 
-// <<< VÔ HIỆU HÓA TOÀN BỘ HÀM GNUPLOT >>>
-/*
-void DDoSSimulator::ExportToGnuplot()
-{
-    NS_LOG_INFO("Exporting data to Gnuplot format...");
-    std::ofstream gpFile;
-    gpFile.open("ddos_data.dat");
-    std::ifstream statsFile("realtime_stats.csv"); 
-    std::string line;
-    std::getline(statsFile, line); // Bỏ qua header
-    gpFile << "# Time NormalPackets AttackPackets Throughput AvgDelay\n";
-    while (std::getline(statsFile, line))
-    {
-        gpFile << line << "\n";
-    }
-    gpFile.close();
-    statsFile.close();
-    NS_LOG_INFO("Gnuplot data written to ddos_data.dat");
-}
-*/
 
-// <<< HÀM RUN() ĐÃ CẬP NHẬT >>>
 void DDoSSimulator::Run()
 {
     CreateNodes();
@@ -424,14 +410,13 @@ void DDoSSimulator::Run()
 }
 
 // =================================================================
-// <<< CÁC HÀM MỚI CHO VIỆC GIẢM THIỂU (MITIGATION) - ĐÃ SỬA LỖI >>>
+// <<< CÁC HÀM MITIGATION (ĐÃ SỬA LỖI LOGIC VÀ ĐƯỜNG DẪN) >>>
 // =================================================================
 
 void DDoSSimulator::SetupMitigation()
 {
-    NS_LOG_INFO("Setting up Mitigation (NetDevice Callback)...");
+    std::cout << "MITIGATION (std::cout): Setting up Mitigation (NetDevice Callback)..." << std::endl;
 
-    // Sử dụng API SetReceiveCallback trên các AP NetDevices
     for (uint32_t i = 0; i < m_apDevices.GetN(); ++i)
     {
         m_apDevices.Get(i)->SetReceiveCallback(
@@ -439,7 +424,7 @@ void DDoSSimulator::SetupMitigation()
         );
     }
 
-    m_liveStatsFile.open("live_flow_stats.csv", std::ofstream::out | std::ofstream::trunc);
+    m_liveStatsFile.open("/home/traphan/ns-3-dev/ddos-project-new/data/live/live_flow_stats.csv", std::ofstream::out | std::ofstream::trunc);
     m_liveStatsFile 
         << "time,source_ip,protocol,tx_packets,rx_packets,tx_bytes,rx_bytes,"
         << "delay_sum,jitter_sum,lost_packets,packet_loss_ratio,"
@@ -456,15 +441,14 @@ bool DDoSSimulator::PacketDropCallback(
     Ptr<Packet> p_copy = packet->Copy();
     Ipv4Header header;
     
-    // 0x0800 là EtherType (mã giao thức) cho IPv4
-    if (protocol == 0x0800) 
+    if (protocol == 0x0800) // 0x0800 là mã cho IPv4
     {
         if (p_copy->PeekHeader(header))
         {
             Ipv4Address sourceIp = header.GetSource();
             if (m_blockedIps.count(sourceIp))
             {
-                NS_LOG_WARN("MITIGATION: Dropped packet from blocked IP: " << sourceIp);
+                std::cout << "MITIGATION (std::cout): Dropped packet from blocked IP: " << sourceIp << std::endl;
                 return false; // Hủy gói (không nhận)
             }
         }
@@ -478,7 +462,7 @@ void DDoSSimulator::MonitorLiveFlows()
 
     if (!m_monitor)
     {
-        NS_LOG_WARN("MonitorLiveFlows: FlowMonitor chưa được cài đặt (chờ 1s)...");
+        std::cout << "MITIGATION (std::cout): MonitorLiveFlows waiting for FlowMonitor..." << std::endl;
         Simulator::Schedule(Seconds(1.0), &DDoSSimulator::MonitorLiveFlows, this);
         return;
     }
@@ -488,30 +472,28 @@ void DDoSSimulator::MonitorLiveFlows()
         DynamicCast<Ipv4FlowClassifier>(m_flowMonHelper.GetClassifier());
     FlowMonitor::FlowStatsContainer stats = m_monitor->GetFlowStats();
 
-    m_liveStatsFile.open("live_flow_stats.csv", std::ofstream::app);
+    m_liveStatsFile.open("/home/traphan/ns-3-dev/ddos-project-new/data/live/live_flow_stats.csv", 
+                         std::ofstream::app);
 
     for (auto it = stats.begin(); it != stats.end(); ++it)
     {
         FlowId flowId = it->first;
-        FlowMonitor::FlowStats currentStats = it->second;
-        FlowMonitor::FlowStats deltaStats;
-        deltaStats.txPackets = currentStats.txPackets - m_lastFlowStats[flowId].txPackets;
-
-        if (deltaStats.txPackets > 0)
+        FlowMonitor::FlowStats currentStats = it->second; 
+        
+        uint32_t packetsNow = currentStats.txPackets;
+        uint32_t packetsLast = m_lastTxPackets_live[flowId]; 
+        
+        if (packetsNow > packetsLast) 
         {
-            deltaStats.rxPackets = currentStats.rxPackets - m_lastFlowStats[flowId].rxPackets;
-            deltaStats.txBytes = currentStats.txBytes - m_lastFlowStats[flowId].txBytes;
-            deltaStats.rxBytes = currentStats.rxBytes - m_lastFlowStats[flowId].rxBytes;
-            deltaStats.delaySum = currentStats.delaySum - m_lastFlowStats[flowId].delaySum;
-            deltaStats.jitterSum = currentStats.jitterSum - m_lastFlowStats[flowId].jitterSum;
-            deltaStats.lostPackets = currentStats.lostPackets - m_lastFlowStats[flowId].lostPackets;
-
-            double flowDuration = 1.0; 
-            double throughput = (deltaStats.rxBytes * 8.0) / (flowDuration * 1000.0); // Kbps
+            double flowDuration =
+                currentStats.timeLastRxPacket.GetSeconds() - currentStats.timeFirstTxPacket.GetSeconds();
+            double throughput = 0;
+            if (flowDuration > 0)
+                throughput = (currentStats.rxBytes * 8.0) / (flowDuration * 1000.0); // Kbps
             double packetLossRatio = 0.0;
-            if ((deltaStats.txPackets + deltaStats.lostPackets) > 0)
+            if ((currentStats.txPackets + currentStats.lostPackets) > 0)
             {
-                packetLossRatio = (deltaStats.lostPackets) / (double)(deltaStats.txPackets + deltaStats.lostPackets);
+                packetLossRatio = (currentStats.lostPackets) / (double)(currentStats.txPackets + currentStats.lostPackets);
             }
             Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow(flowId);
             bool isAttack = false;
@@ -522,13 +504,15 @@ void DDoSSimulator::MonitorLiveFlows()
             m_liveStatsFile
                 << Simulator::Now().GetSeconds() << ","
                 << t.sourceAddress << "," << (int)t.protocol << ","
-                << deltaStats.txPackets << "," << deltaStats.rxPackets << ","
-                << deltaStats.txBytes << "," << deltaStats.rxBytes << ","
-                << deltaStats.delaySum.GetSeconds() << "," << deltaStats.jitterSum.GetSeconds() << ","
-                << deltaStats.lostPackets << "," << packetLossRatio << ","
+                << currentStats.txPackets << "," << currentStats.rxPackets << ","
+                << currentStats.txBytes << "," << currentStats.rxBytes << ","
+                << currentStats.delaySum.GetSeconds() << "," << currentStats.jitterSum.GetSeconds() << ","
+                << currentStats.lostPackets << "," << packetLossRatio << ","
                 << throughput << "," << flowDuration << "," << (isAttack ? 1 : 0) << "\n";
+            
+            // <<< SỬA: Cập nhật vào biến riêng 'm_lastTxPackets_live' >>>
+            m_lastTxPackets_live[flowId] = packetsNow;
         }
-        m_lastFlowStats[flowId] = currentStats; 
     }
     m_liveStatsFile.close();
     Simulator::Schedule(Seconds(1.0), &DDoSSimulator::MonitorLiveFlows, this);
@@ -538,7 +522,7 @@ void DDoSSimulator::CheckForBlacklistUpdates()
 {
     if (Simulator::Now().GetSeconds() > m_simTime) return;
 
-    std::ifstream blacklistFile("blacklist.txt");
+    std::ifstream blacklistFile("/home/traphan/ns-3-dev/ddos-project-new/data/live/blacklist.txt");
     if (blacklistFile.is_open())
     {
         std::string ipString;
@@ -549,7 +533,7 @@ void DDoSSimulator::CheckForBlacklistUpdates()
             ip.Set(ipString.c_str()); 
             if (m_blockedIps.insert(ip).second)
             {
-                NS_LOG_INFO("MITIGATION: Đã nhận lệnh chặn IP mới: " << ip);
+                std::cout << "MITIGATION: Đã nhận lệnh chặn IP mới: " << ip << std::endl;
             }
         }
         blacklistFile.close();
@@ -557,9 +541,6 @@ void DDoSSimulator::CheckForBlacklistUpdates()
     Simulator::Schedule(Seconds(0.5), &DDoSSimulator::CheckForBlacklistUpdates, this);
 }
 
-// =================================================================
-// === HÀM MAIN (KHÔNG THAY ĐỔI) ===
-// =================================================================
 
 int main(int argc, char* argv[])
 {
