@@ -1,198 +1,137 @@
-# DDoS-Detection-and-Mitigation-with-ML-Models
-A comprehensive system for detecting and mitigating DDoS attacks using Machine Learning models and NS-3 network simulations.
+#DDoS Detection and Mitigation with ML Models
+
+A comprehensive system for detecting and mitigating DDoS attacks in real-time using Machine Learning models and NS-3 network simulations. This project implements a closed-loop feedback system where NS-3 simulates network traffic, and a Python-based AI agent detects and mitigates attacks on the fly.
+
 📋 Project Overview
 
 This project implements a complete DDoS detection and mitigation pipeline that combines:
 
-    NS-3 Network Simulations for realistic attack scenarios
-    -Machine Learning Models for accurate attack detection
-    -Real-time Detection System with automatic mitigation
-    -Performance Analysis with multiple metrics visualization
+    NS-3 Network Simulations: Realistic simulation of IoT networks under DDoS attack (UDP Flood).
+    Machine Learning Models: Pre-trained Random Forest models for accurate attack detection.
+    Real-time Mitigation System: A closed-loop system where Python reads live network stats and instructs NS-3 to block malicious IPs instantly.
+    Performance Analysis: Tools to visualize Latency, Throughput, PDR, and Accuracy across different scenarios.
 
+📂 Project Structure
+
+ddos-project-new/
+├── analysis/               # Scripts for performance visualization
+├── config/                 # Configuration files (yaml)
+├── data/
+│   ├── raw/                # Offline simulation results (for training/plotting)
+│   └── live/               # Real-time communication files (pipes)
+├── models/                 # Saved ML models (.pkl / .joblib)
+├── mitigation/             # Real-time AI agent scripts
+│   └── mitigator.py        # The "Brain" of the system
+├── ml-pipeline/            # Scripts for training ML models
+├── ns3-simulations/        # NS-3 C++ source code
+│   └── src/
+│       └── ddos-simulator.cc # Main simulation logic
+├── run_experiments.sh      # Automated script for multiple scenarios
+├── run_visualization.py    # Entry point for plotting
+└── requirements.txt        # Python dependencies
 
 🚀 Quick Start
 
-Installation
-Clone the repository
-git clone <repository-url>
+1. Prerequisites
+    OS: Linux (Ubuntu recommended)
+    Software: NS-3 (version 3.35+), Python 3.8+, GCC, CMake
+
+2. Installation
+Clone the repository:
+Bash
+git clone https://github.com/tra134/DDoS-Detection-and-Mitigation-with-ML-Model
 cd ddos-project-new
 
-Set up Python environment
-
-bash
-python -m venv ddos-env
-source ddos-env/bin/activate  # On Windows: ddos-env\Scripts\activate
+Set up Python environment:
+Bash
+python3 -m venv ddos-env
+source ddos-env/bin/activate
 pip install -r requirements.txt
 
-Set up NS-3 environment
+Build the NS-3 Simulation:
+Bash
+cd ns3-simulations/build
+cmake ..
+make -j$(nproc)
+cd ../.. 
 
-bash
+3. Running the Project (Two Modes)
 
-cd ns-3-dev
-./waf configure
+A. Real-time Mitigation Mode (The "Cool" Stuff)
+See the AI detect and block attacks while the simulation runs.
 
-Running the Complete Pipeline
+You need two separate terminals.
+Terminal 1: The AI Agent (Defender)
+Bash
+# Activate env
+source ddos-env/bin/activate
+# Run the mitigator
+python3 mitigation/mitigator.py
+Wait until you see: "✅ AI Brain is ready. Waiting for data..."
+Terminal 2: The Simulation (Network)
+Bash
 
-    Train ML Models
+# Go to build directory
+cd ns3-simulations/build
+# Run simulation (e.g., 30 nodes, 10 attackers)
+./ddos-simulator --nodes=30 --attackers=10 --time=60
+Watch Terminal 1 detect the attack and Terminal 2 confirm the blocked packets!
 
-bash
+B. Performance Analysis Mode (Automated)
+Run multiple scenarios to generate charts for Latency, PDR, etc.
+Bash
 
-python train_quick.py
-# or
-cd ml-pipeline
-python train_model.py
+# Make sure you are in the project root
+chmod +x run_experiments.sh
+./run_experiments.sh
 
-    Run NS-3 Simulations (Multiple Scenarios)
-
-bash
-
-cd ns-3-dev
-chmod +x ns3-simulations/run_multiple_scenarios.sh
-./ns3-simulations/run_multiple_scenarios.sh
-
-    Run Performance Analysis
-
-bash
-
-python run_accurate_analysis.py
-
-    Start Real-time Detection (Optional)
-
-bash
-
-cd ml-pipeline
-python ddos_detector.py
+This script will:
+    Run simulations for 10, 20, 30, 40, 50 nodes.
+    Collect detailed logs.
+    Automatically generate performance charts in the results/ folder.
 
 📊 Performance Metrics
 
-The system generates four key performance metrics:
+The system evaluates network health using four key metrics:
+    Latency: Measures network delay. High latency indicates congestion.
+    Throughput: Data transfer rate. A drop indicates successful DDoS.
+    Packet Delivery Ratio (PDR): Percentage of packets successfully delivered.
+    Detection Accuracy: How accurately the ML model identifies attack flows.
 
-    -IoT Nodes vs. Latency - Network delay under different loads
-    -IoT Nodes vs. Throughput - Data transfer capacity
-    -IoT Nodes vs. Packet Delivery Ratio - Network reliability
-    -IoT Nodes vs. Detection Accuracy - ML model performance
+Sample Result:
+    With mitigation enabled, PDR for legitimate users maintains >60% even under 50Mbps attack load on a 5Mbps link, whereas without mitigation, it would drop to near 0%.
 
 🎯 ML Models Implemented
-    Random Forest - Primary detection model
-    Decision Tree - Lightweight alternative
-    K-Neighbors - Distance-based detection
-    Gradient Boosting - Ensemble method
-    SVM - Support Vector Machine
-
-WOA-SSA Hybrid Optimization
-
-The system uses Whale Optimization Algorithm (WOA) combined with Squirrel Search Algorithm (SSA) for:
-    Feature selection optimization
-    Hyperparameter tuning
-    Model performance enhancement
+    Random Forest (Best Performer): Selected for its high accuracy and ability to handle tabular network flow data.
+    Gradient Boosting: Used for comparison.
+    SVM (Linear): Lightweight alternative.
 
 🔧 Configuration
-NS-3 Simulation Parameters
-yaml
 
-# config/ns3-config.yaml
-simulation:
-  iot_nodes: [10, 20, 30, 40, 50]
-  attackers: [2, 4, 6, 8, 10] 
-  simulation_time: 60.0
-  wifi_standard: "802.11n"
+NS-3 Parameters:
+    Topology: Star/P2P mixed with IoT nodes.
+    Bottleneck Link: 5Mbps (to simulate realistic congestion).
+    Attack Traffic: UDP Flood (5000kbps per attacker).
 
-ML Model Configuration
-yaml
+Feature Selection: The model is trained on Cumulative Flow Statistics:
+    tx_packets, tx_bytes (Volume)
+    packet_loss_ratio (Impact)
+    flow_duration
 
-# config/ml-config.yaml
-model:
-  threshold: 0.85
-  features:
-    - packet_length
-    - protocol_type
-    - packet_rate
-    - port_entropy
+🛡️ How Mitigation Works
 
-
-
-🛡️ Detection & Mitigation Features
-Real-time Detection
-
-    Packet sniffing and analysis
-
-    Statistical pattern recognition
-
-    ML-based classification
-
-    Adaptive thresholding
-
-Mitigation Actions
-
-    Automatic IP blocking
-
-    Rate limiting
-
-    Traffic filtering
-
-    Alert system integration
-
-📈 Results Interpretation
-Expected Trends
-
-    Latency: Increases with more IoT nodes
-
-    Throughput: Decreases with network congestion
-
-    PDR: Drops under attack conditions
-
-    Accuracy: Varies based on attack complexity
-
-Performance Benchmarks
-    Detection Accuracy: >85%
-    False Positive Rate: <5%
-    Processing Delay: <10ms per packet
-    Mitigation Response: <2 seconds
-
-🔬 Advanced Features
-Multi-Scenario Analysis
-The system automatically analyzes multiple simulation scenarios:
-    Different network sizes (10-50 IoT nodes)
-    Various attacker ratios
-    Multiple traffic patterns
-
-Optimization Algorithms
-    WOA (Whale Optimization): Global search capability
-    SSA (Squirrel Search): Local optimization
-    Hybrid WOA-SSA: Balanced exploration-exploitation
-
-🐛 Troubleshooting
-Common Issues
-    NS-3 Build Errors
-        Ensure NS-3 dependencies are installed
-        Check compiler compatibility
-
-    ML Model Training Failures
-        Verify data file paths
-        Check feature column names in CSV files
-
-    Visualization Errors
-        Ensure matplotlib backend is properly configured
-        Check file permissions in results directory
-
-
-
-
-📚 References
-    NS-3 Network Simulator Documentation
-    Scikit-learn Machine Learning Library
-    Whale Optimization Algorithm Research Papers
-    DDoS Detection Survey Papers
+    Monitor: NS-3 calculates cumulative flow statistics every second and writes to data/live/live_flow_stats.csv.
+    Detect: Python script (mitigator.py) watches this file, preprocesses data, and feeds it to the Random Forest model.
+    Decide: If a flow is predicted as "Attack", the source IP is written to data/live/blacklist.txt.
+    Act: NS-3 reads the blacklist and the PacketDropCallback function instantly drops any new packets from those IPs at the Base Station level.
 
 
 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License.
 
 🏆 Acknowledgments
-    NS-3 development team
-    Scikit-learn contributors
-    Research papers on DDoS detection
-    Optimization algorithm researchers
 
-Note: This project is for research and educational purposes. Always ensure proper authorization before deploying in production environments.
+    NS-3 Network Simulator Project
+
+    Scikit-learn Community

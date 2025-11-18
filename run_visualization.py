@@ -17,14 +17,21 @@ def main():
     print("   6.4: Number of IOT Nodes vs. Detection Accuracy (%)")
     print("=" * 60)
     
-    # Configuration
-    base_dir = os.path.dirname(os.path.abspath(__file__))
+    # --- CẤU HÌNH ĐƯỜNG DẪN (SỬA LỖI Ở ĐÂY) ---
+    # Sử dụng đường dẫn tuyệt đối chính xác từ lệnh pwd của bạn
+    base_dir = '/home/traphan/ns-3-dev/ddos-project-new'
+    
     data_dir = os.path.join(base_dir, 'data', 'raw')
     model_path = os.path.join(base_dir, 'models', 'ddos_model.pkl')
     node_scenarios = [10, 20, 30, 40, 50]
     
     # Kiểm tra data
     print(f"🔍 Checking for simulation data in: {data_dir}")
+    
+    if not os.path.exists(data_dir):
+         print(f"❌ Directory not found: {data_dir}")
+         return
+
     data_files = [f for f in os.listdir(data_dir) if f.startswith('ns3_detailed_results_')]
     
     if not data_files:
