@@ -1,17 +1,11 @@
-# NS3 Simulation
-ns3-simulations/results/
-*.pcap
-*.xml
-
 # Models
 models/*.pkl
 models/*.joblib
 models/*.h5
 
 # Data
-data/raw/
 data/processed/
-*.csv
+
 *.dat
 
 # Logs
@@ -44,6 +38,3 @@ __pycache__/
 # Temporary files
 *.tmp
 *.temp
-
-# NetAnim
-*.png

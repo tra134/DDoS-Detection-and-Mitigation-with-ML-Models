@@ -1,7 +1,8 @@
 /*
- * DDoS Simulator - Clean Output & Congestion Version
- * - Bandwidth reduced to 5Mbps to force packet loss (Bottleneck).
- * - Output cleaned: Only shows Blocked IPs and Periodic Stats.
+ * DDoS Simulator - FINAL VISUAL UPGRADE
+ * - Colors: Neon style for better contrast.
+ * - Layout: Optimized spacing for wireless rings visibility.
+ * - Logic: Full Mitigation & Bottleneck logic preserved.
  */
 
 #include "ns3/core-module.h"
@@ -13,20 +14,21 @@
 #include "ns3/flow-monitor-module.h"
 #include "ns3/point-to-point-module.h"
 #include "ns3/netanim-module.h"
+#include "ns3/ipv4-l3-protocol.h"
+#include "ns3/arp-l3-protocol.h"
 #include <fstream>
 #include <vector>
 #include <sstream>
 #include <map> 
 #include <set> 
 #include <iostream> 
-#include "ns3/ipv4-l3-protocol.h"
-#include "ns3/arp-l3-protocol.h"
+#include <iomanip>
 
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("DDoSSimulator");
 
-// Đường dẫn gốc (Sửa lại nếu thư mục của bạn khác)
+// Đường dẫn gốc
 const std::string PROJECT_ROOT = "/home/traphan/ns-3-dev/ddos-project-new";
 
 class DDoSSimulator
@@ -39,6 +41,7 @@ private:
     uint32_t m_nIotNodes;
     uint32_t m_nAttackers;
     double m_simTime;
+
     NodeContainer m_iotNodes;
     NodeContainer m_baseStations;
     NodeContainer m_serverNode;
@@ -54,7 +57,6 @@ private:
     FlowMonitorHelper m_flowMonHelper;
     Ptr<FlowMonitor> m_monitor;
 
-    // Biến thống kê
     std::ofstream m_statsFile; 
     std::map<FlowId, uint32_t> m_lastTxPackets_realtime; 
     std::ofstream m_liveStatsFile; 
@@ -66,7 +68,6 @@ private:
     void SetupNetwork();
     void SetupApplications();
     void SetupDDoSAttack();
-    void SetupNetAnim();
     
     void SetupFlowMonitor();
     void ScheduleRealtimeStats();
@@ -80,10 +81,6 @@ private:
     bool PacketDropCallback(Ptr<NetDevice> device, Ptr<const Packet> packet, uint16_t protocol, const Address& from);
 };
 
-// =================================================================
-// === IMPLEMENTATION ===
-// =================================================================
-
 DDoSSimulator::DDoSSimulator(uint32_t nIotNodes, uint32_t nAttackers, double simTime)
 {
     m_nIotNodes = nIotNodes;
@@ -96,38 +93,52 @@ void DDoSSimulator::CreateNodes()
     m_iotNodes.Create(m_nIotNodes);
     m_baseStations.Create(2);
     m_serverNode.Create(1);
+
     m_allNodes.Add(m_iotNodes);
     m_allNodes.Add(m_baseStations);
     m_allNodes.Add(m_serverNode);
 
     Ptr<UniformRandomVariable> uv = CreateObject<UniformRandomVariable>();
-    for (uint32_t i = 0; i < m_nAttackers; ++i) {
-        uint32_t attackerIndex = uv->GetInteger(0, m_nIotNodes - 1);
-        if (std::find(m_attackerIndices.begin(), m_attackerIndices.end(), attackerIndex) == m_attackerIndices.end()) {
-            m_attackerIndices.push_back(attackerIndex);
-        } else {
-            i--; 
+    while (m_attackerIndices.size() < m_nAttackers) {
+        uint32_t idx = uv->GetInteger(0, m_nIotNodes - 1);
+        if (std::find(m_attackerIndices.begin(), m_attackerIndices.end(), idx) == m_attackerIndices.end()) {
+            m_attackerIndices.push_back(idx);
         }
     }
-    // NS_LOG_INFO("Created nodes..."); // Tắt log thừa
+
+    std::cout << "\n===================================================" << std::endl;
+    std::cout << "🚧 NETWORK TOPOLOGY INITIALIZED (Visual Enhanced)" << std::endl;
+    std::cout << "   - IoT Nodes:   " << m_nIotNodes << " (Left Grid)" << std::endl;
+    std::cout << "   - Attackers:   " << m_nAttackers << " (Hidden within IoT)" << std::endl;
+    std::cout << "   - Gateways:    2 Base Stations" << std::endl;
+    std::cout << "   - Victim:      1 Server" << std::endl;
+    std::cout << "---------------------------------------------------" << std::endl;
 }
 
 void DDoSSimulator::SetupMobility()
 {
     MobilityHelper mobility;
+    
+    // 1. IoT Nodes: Xếp thoáng hơn để thấy vòng tròn sóng (Delta = 25)
     mobility.SetPositionAllocator("ns3::GridPositionAllocator",
-                                  "MinX", DoubleValue(10.0), "MinY", DoubleValue(10.0),
-                                  "DeltaX", DoubleValue(15.0), "DeltaY", DoubleValue(15.0),
-                                  "GridWidth", UintegerValue(5), "LayoutType", StringValue("RowFirst"));
+                                  "MinX", DoubleValue(0.0),
+                                  "MinY", DoubleValue(0.0),
+                                  "DeltaX", DoubleValue(25.0), // Khoảng cách rộng hơn
+                                  "DeltaY", DoubleValue(25.0),
+                                  "GridWidth", UintegerValue(5), 
+                                  "LayoutType", StringValue("RowFirst"));
+    
+    // Rung nhẹ
     mobility.SetMobilityModel("ns3::RandomWalk2dMobilityModel",
-                              "Bounds", RectangleValue(Rectangle(0, 100, 0, 100)),
+                              "Bounds", RectangleValue(Rectangle(-10, 150, -10, 150)),
                               "Distance", DoubleValue(5.0));
     mobility.Install(m_iotNodes);
 
+    // 2. Base Stations & Server: Sắp xếp cân đối
     Ptr<ListPositionAllocator> staticPositions = CreateObject<ListPositionAllocator>();
-    staticPositions->Add(Vector(25.0, 50.0, 0.0)); 
-    staticPositions->Add(Vector(75.0, 50.0, 0.0)); 
-    staticPositions->Add(Vector(50.0, 50.0, 0.0)); 
+    staticPositions->Add(Vector(60.0, 150.0, 0.0));  // BS 1 (Trên)
+    staticPositions->Add(Vector(60.0, -30.0, 0.0));  // BS 2 (Dưới)
+    staticPositions->Add(Vector(200.0, 60.0, 0.0));  // Server (Xa bên phải)
     
     MobilityHelper staticMobility;
     staticMobility.SetPositionAllocator(staticPositions);
@@ -152,8 +163,7 @@ void DDoSSimulator::SetupNetwork()
     NetDeviceContainer staDevices = wifi.Install(wifiPhy, wifiMac, m_iotNodes);
 
     PointToPointHelper p2p;
-    // <<< SỬA: Giảm băng thông xuống 5Mbps để tạo tắc nghẽn (Loss > 0) >>>
-    p2p.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
+    p2p.SetDeviceAttribute("DataRate", StringValue("5Mbps")); 
     p2p.SetChannelAttribute("Delay", StringValue("2ms"));
 
     NetDeviceContainer p2pDevices1 = p2p.Install(m_baseStations.Get(0), m_serverNode.Get(0));
@@ -201,6 +211,7 @@ void DDoSSimulator::SetupApplications()
 
 void DDoSSimulator::SetupDDoSAttack()
 {
+    std::cout << "⚔️  ATTACK SCENARIO: UDP Flood (50Mbps) -> 5Mbps Link" << std::endl;
     uint16_t attackPort = 8080;
     for (uint32_t attackerIndex : m_attackerIndices) {
         OnOffHelper attackHelper("ns3::UdpSocketFactory", InetSocketAddress(m_serverIp, attackPort));
@@ -214,28 +225,15 @@ void DDoSSimulator::SetupDDoSAttack()
 
         Ipv4Address attackerIp = m_staInterfaces.GetAddress(attackerIndex);
         m_attackerIps.push_back(attackerIp);
-        // NS_LOG_INFO("Node " << attackerIndex << " (" << attackerIp << ") configured as DDoS attacker");
-    }
-}
-
-void DDoSSimulator::SetupNetAnim()
-{
-    static AnimationInterface anim("ddos-animation.xml");
-    for (uint32_t i = 0; i < m_iotNodes.GetN(); ++i) {
-        anim.UpdateNodeColor(m_iotNodes.Get(i), 0, 255, 0); 
-    }
-    for (auto idx : m_attackerIndices) {
-        anim.UpdateNodeColor(m_iotNodes.Get(idx), 255, 0, 0);
     }
 }
 
 // =================================================================
-// === LOGIC THỐNG KÊ VÀ FLOWMONITOR ===
+// === STATS & FLOW MONITOR ===
 // =================================================================
 
 void DDoSSimulator::SetupFlowMonitor()
 {
-    // NS_LOG_INFO("Installing FlowMonitor...");
     m_monitor = m_flowMonHelper.InstallAll();
 }
 
@@ -256,7 +254,6 @@ void DDoSSimulator::UpdateRealtimeStats()
     if (!m_monitor) return;
 
     m_monitor->CheckForLostPackets();
-
     Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier>(m_flowMonHelper.GetClassifier());
     FlowMonitor::FlowStatsContainer stats = m_monitor->GetFlowStats();
     
@@ -269,7 +266,7 @@ void DDoSSimulator::UpdateRealtimeStats()
     for (auto it = stats.begin(); it != stats.end(); ++it) {
         if (it->second.txPackets == 0) continue;
         
-        double flowThroughput = it->second.rxBytes * 8.0 / 1000.0; // Kbps
+        double flowThroughput = it->second.rxBytes * 8.0 / 1000.0; 
         double flowDelay = it->second.delaySum.GetSeconds();
         totalThroughput += flowThroughput;
         totalDelay += flowDelay;
@@ -294,12 +291,11 @@ void DDoSSimulator::UpdateRealtimeStats()
     double avgDelay = (flowCount > 0) ? totalDelay / flowCount : 0;
     double now = Simulator::Now().GetSeconds();
 
-    // <<< LOG DUY NHẤT TRONG TERMINAL (Cùng với Blocking IP) >>>
     if (currentAttackPackets > 0 || currentNormalPackets > 0) {
-        std::cout << "STATS: Time=" << now 
-                  << " Norm=" << currentNormalPackets 
-                  << " Attk=" << currentAttackPackets 
-                  << " T-put=" << totalThroughput << std::endl;
+        std::cout << "STATS: Time=" << std::setw(4) << now 
+                  << " | Norm=" << std::setw(5) << currentNormalPackets 
+                  << " | Attk=" << std::setw(5) << currentAttackPackets 
+                  << " | T-put=" << std::setw(8) << totalThroughput << " Kbps" << std::endl;
     }
 
     std::string path = PROJECT_ROOT + "/data/raw/realtime_stats.csv";
@@ -316,6 +312,8 @@ void DDoSSimulator::UpdateRealtimeStats()
 
 void DDoSSimulator::SetupMitigation()
 {
+    std::cout << "🛡️  MITIGATION SYSTEM: Initialized" << std::endl;
+
     for (uint32_t i = 0; i < m_apDevices.GetN(); ++i) {
         m_apDevices.Get(i)->SetReceiveCallback(MakeCallback(&DDoSSimulator::PacketDropCallback, this));
     }
@@ -331,30 +329,27 @@ void DDoSSimulator::SetupMitigation()
     Simulator::Schedule(Seconds(1.5), &DDoSSimulator::CheckForBlacklistUpdates, this);
 }
 
-bool DDoSSimulator::PacketDropCallback(
-    Ptr<NetDevice> device, Ptr<const Packet> packet, uint16_t protocol, const Address& from)
+bool DDoSSimulator::PacketDropCallback(Ptr<NetDevice> device, Ptr<const Packet> packet, uint16_t protocol, const Address& from)
 {
-    if (protocol == 0x0800) { // IPv4
+    if (protocol == 0x0800) { 
         Ptr<Packet> p_copy = packet->Copy();
         Ipv4Header header;
         if (p_copy->PeekHeader(header)) {
             Ipv4Address sourceIp = header.GetSource();
             if (m_blockedIps.count(sourceIp)) {
-                // <<< TẮT LOG DROPPED (Cho terminal sạch sẽ) >>>
-                // std::cout << "MITIGATION: Dropped packet from " << sourceIp << std::endl;
                 return true; // DROP
             }
         }
         Ptr<Ipv4L3Protocol> ipv4l3 = device->GetNode()->GetObject<Ipv4L3Protocol>();
         if (ipv4l3) {
             ipv4l3->Receive(device, packet, protocol, from, device->GetAddress(), NetDevice::PACKET_HOST);
-            return true; // PASS IPv4
+            return true; 
         }
-    } else if (protocol == 0x0806) { // ARP
+    } else if (protocol == 0x0806) { 
         Ptr<ArpL3Protocol> arp = device->GetNode()->GetObject<ArpL3Protocol>();
         if (arp) {
             arp->Receive(device, packet, protocol, from, device->GetAddress(), NetDevice::PACKET_HOST);
-            return true; // PASS ARP
+            return true; 
         }
     }
     return false; 
@@ -363,93 +358,70 @@ bool DDoSSimulator::PacketDropCallback(
 void DDoSSimulator::MonitorLiveFlows()
 {
     if (Simulator::Now().GetSeconds() > m_simTime) return; 
-
     if (!m_monitor) {
         Simulator::Schedule(Seconds(1.0), &DDoSSimulator::MonitorLiveFlows, this);
         return;
     }
-
     m_monitor->CheckForLostPackets();
-    Ptr<Ipv4FlowClassifier> classifier =
-        DynamicCast<Ipv4FlowClassifier>(m_flowMonHelper.GetClassifier());
+    Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier>(m_flowMonHelper.GetClassifier());
     FlowMonitor::FlowStatsContainer stats = m_monitor->GetFlowStats();
 
     std::string path = PROJECT_ROOT + "/data/live/live_flow_stats.csv";
     m_liveStatsFile.open(path.c_str(), std::ofstream::app);
 
-    for (auto it = stats.begin(); it != stats.end(); ++it)
-    {
+    for (auto it = stats.begin(); it != stats.end(); ++it) {
         FlowId flowId = it->first;
         FlowMonitor::FlowStats currentStats = it->second; 
-        
         uint32_t packetsNow = currentStats.txPackets;
         uint32_t packetsLast = m_lastTxPackets_live[flowId]; 
         
-        if (packetsNow > packetsLast) 
-        {
-            double flowDuration =
-                currentStats.timeLastRxPacket.GetSeconds() - currentStats.timeFirstTxPacket.GetSeconds();
-            double throughput = 0;
-            if (flowDuration > 0)
-                throughput = (currentStats.rxBytes * 8.0) / (flowDuration * 1000.0); // Kbps
+        if (packetsNow > packetsLast) {
+            double flowDuration = currentStats.timeLastRxPacket.GetSeconds() - currentStats.timeFirstTxPacket.GetSeconds();
+            double throughput = (flowDuration > 0) ? (currentStats.rxBytes * 8.0) / (flowDuration * 1000.0) : 0;
             double packetLossRatio = 0.0;
-            if ((currentStats.txPackets + currentStats.lostPackets) > 0)
-            {
+            if ((currentStats.txPackets + currentStats.lostPackets) > 0) {
                 packetLossRatio = (currentStats.lostPackets) / (double)(currentStats.txPackets + currentStats.lostPackets);
             }
-
             Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow(flowId);
             bool isAttack = false;
             for (const auto& attackerIp : m_attackerIps) {
                 if (t.sourceAddress == attackerIp) { isAttack = true; break; }
             }
 
-            m_liveStatsFile
-                << Simulator::Now().GetSeconds() << ","
-                << t.sourceAddress << "," << (int)t.protocol << ","
-                << currentStats.txPackets << "," << currentStats.rxPackets << ","
-                << currentStats.txBytes << "," << currentStats.rxBytes << ","
-                << currentStats.delaySum.GetSeconds() << "," << currentStats.jitterSum.GetSeconds() << ","
-                << currentStats.lostPackets << "," << packetLossRatio << ","
-                << throughput << "," << flowDuration << "," << (isAttack ? 1 : 0) << "\n";
+            m_liveStatsFile << Simulator::Now().GetSeconds() << ","
+                            << t.sourceAddress << "," << (int)t.protocol << ","
+                            << currentStats.txPackets << "," << currentStats.rxPackets << ","
+                            << currentStats.txBytes << "," << currentStats.rxBytes << ","
+                            << currentStats.delaySum.GetSeconds() << "," << currentStats.jitterSum.GetSeconds() << ","
+                            << currentStats.lostPackets << "," << packetLossRatio << ","
+                            << throughput << "," << flowDuration << "," << (isAttack ? 1 : 0) << "\n";
             
             m_lastTxPackets_live[flowId] = packetsNow;
         }
     }
     m_liveStatsFile.close();
-    
     Simulator::Schedule(Seconds(1.0), &DDoSSimulator::MonitorLiveFlows, this);
 }
 
 void DDoSSimulator::CheckForBlacklistUpdates()
 {
     if (Simulator::Now().GetSeconds() > m_simTime) return;
-
     std::string path = PROJECT_ROOT + "/data/live/blacklist.txt";
     std::ifstream blacklistFile(path.c_str());
-    if (blacklistFile.is_open())
-    {
+    if (blacklistFile.is_open()) {
         std::string ipString;
-        while (std::getline(blacklistFile, ipString))
-        {
+        while (std::getline(blacklistFile, ipString)) {
             if (ipString.empty()) continue;
             Ipv4Address ip;
             ip.Set(ipString.c_str()); 
-            
-            if (m_blockedIps.insert(ip).second)
-            {
-                // <<< LOG DUY NHẤT VỀ MITIGATION >>>
-                std::cout << "BLOCKING: New attacker IP added to blacklist: " << ip << std::endl;
+            if (m_blockedIps.insert(ip).second) {
+                std::cout << "🚫 BLOCKING: New attacker IP added to blacklist: " << ip << std::endl;
             }
         }
         blacklistFile.close();
     }
     Simulator::Schedule(Seconds(0.5), &DDoSSimulator::CheckForBlacklistUpdates, this);
 }
-
-// =================================================================
-// === FINAL SAVE ===
-// =================================================================
 
 void DDoSSimulator::SaveFinalResults()
 {
@@ -464,8 +436,7 @@ void DDoSSimulator::SaveFinalResults()
                 << "tx_bytes,rx_bytes,delay_sum,jitter_sum,lost_packets,packet_loss_ratio,"
                 << "throughput,flow_duration,label\n";
 
-    for (auto it = stats.begin(); it != stats.end(); ++it)
-    {
+    for (auto it = stats.begin(); it != stats.end(); ++it) {
         Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow(it->first);
         double flowDuration = it->second.timeLastRxPacket.GetSeconds() - it->second.timeFirstTxPacket.GetSeconds();
         double throughput = (flowDuration > 0) ? (it->second.rxBytes * 8.0) / (flowDuration * 1000.0) : 0;
@@ -487,7 +458,7 @@ void DDoSSimulator::SaveFinalResults()
                     << "\n";
     }
     resultsFile.close();
-    // NS_LOG_INFO("Simulation completed..."); // Tắt log thừa
+    std::cout << "✅ Simulation completed. Detailed results saved." << std::endl;
 }
 
 void DDoSSimulator::Run()
@@ -497,16 +468,56 @@ void DDoSSimulator::Run()
     SetupNetwork();
     SetupApplications();
     SetupDDoSAttack();
-    SetupNetAnim();
     
+    // --- NETANIM MỚI: ĐẸP & TƯƠNG ĐỐI ---
+    AnimationInterface anim("ddos-animation.xml");
+    
+    // Tắt Metadata để không bị rối và tránh crash khi file quá lớn
+    anim.EnablePacketMetadata(false);
+    
+    // Giới hạn kích thước trace (chỉ ghi 500,000 gói tin đầu)
+    anim.SetMaxPktsPerTraceFile(500000);
+
+    // 1. IoT Nodes & Attackers
+    for (uint32_t i = 0; i < m_iotNodes.GetN(); ++i) {
+        Ptr<Node> n = m_iotNodes.Get(i);
+        bool isAttacker = std::find(m_attackerIndices.begin(), m_attackerIndices.end(), i) != m_attackerIndices.end();
+        
+        if (isAttacker) {
+            anim.UpdateNodeColor(n, 255, 0, 0); // ĐỎ
+            anim.UpdateNodeDescription(n, "ATTACKER");
+            anim.UpdateNodeSize(n, 1.2, 1.2);
+        } else {
+            anim.UpdateNodeColor(n, 0, 255, 127); // XANH NGỌC
+            anim.UpdateNodeDescription(n, "IoT");
+            anim.UpdateNodeSize(n, 0.8, 0.8);
+        }
+    }
+
+    // 2. Base Stations (Nổi bật)
+    anim.UpdateNodeColor(m_baseStations.Get(0), 0, 191, 255); // DEEP SKY BLUE
+    anim.UpdateNodeSize(m_baseStations.Get(0), 3.0, 3.0);
+    anim.UpdateNodeDescription(m_baseStations.Get(0), "Gateway-1");
+
+    anim.UpdateNodeColor(m_baseStations.Get(1), 0, 191, 255); // DEEP SKY BLUE
+    anim.UpdateNodeSize(m_baseStations.Get(1), 3.0, 3.0);
+    anim.UpdateNodeDescription(m_baseStations.Get(1), "Gateway-2");
+
+    // 3. Server (Rất to và nổi)
+    anim.UpdateNodeColor(m_serverNode.Get(0), 255, 215, 0); // VÀNG KIM (GOLD)
+    anim.UpdateNodeSize(m_serverNode.Get(0), 5.0, 5.0);
+    anim.UpdateNodeDescription(m_serverNode.Get(0), "CLOUD SERVER");
+
     SetupFlowMonitor();
     ScheduleRealtimeStats();
     SetupMitigation(); 
 
+    std::cout << "\n🚀 STARTING SIMULATION... (Duration: " << m_simTime << "s)" << std::endl;
     Simulator::Stop(Seconds(m_simTime));
     Simulator::Run();
     SaveFinalResults();
     Simulator::Destroy();
+    std::cout << "✅ SIMULATION FINISHED. Animation saved to 'ddos-animation.xml'" << std::endl;
 }
 
 int main(int argc, char* argv[])
