@@ -13,22 +13,24 @@ This project implements a complete DDoS detection and mitigation pipeline that c
 
 📂 Project Structure
 
+```bash
 ddos-project-new/
-├── analysis/               # Scripts for performance visualization
-├── config/                 # Configuration files (yaml)
+├── analysis/ # Scripts for performance visualization
+├── config/ # YAML configuration files
 ├── data/
-│   ├── raw/                # Offline simulation results (for training/plotting)
-│   └── live/               # Real-time communication files (pipes)
-├── models/                 # Saved ML models (.pkl / .joblib)
-├── mitigation/             # Real-time AI agent scripts
-│   └── mitigator.py        # The "Brain" of the system
-├── ml-pipeline/            # Scripts for training ML models
-├── ns3-simulations/        # NS-3 C++ source code
-│   └── src/
-│       └── ddos-simulator.cc # Main simulation logic
-├── run_experiments.sh      # Automated script for multiple scenarios
-├── run_visualization.py    # Entry point for plotting
-└── requirements.txt        # Python dependencies
+│ └── raw/ # Offline simulation results
+├── live/ # Real-time communication pipe files
+├── models/ # Saved ML models (.pkl/.joblib)
+├── mitigation/
+│ └── mitigator.py # AI mitigation engine
+├── ml-pipeline/ # ML training scripts
+├── ns3-simulations/
+│ └── src/
+│ └── ddos-simulator.cc # Main C++ logic
+├── run_experiments.sh # Automated multi-scenario runner
+├── run_visualization.py # Plot results
+└── requirements.txt # Python dependencies
+```
 
 🚀 Quick Start
 
