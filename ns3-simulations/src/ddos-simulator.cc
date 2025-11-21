@@ -387,7 +387,7 @@ void DDoSSimulator::SaveFinalResults()
 void DDoSSimulator::SetupNetAnim()
 {
     // Cấu hình NetAnim cơ bản
-    static AnimationInterface anim("ddos-animation.xml");
+    static AnimationInterface anim("ddos-animationls");
     
     // Tô màu Nodes
     for (uint32_t i = 0; i < m_iotNodes.GetN(); ++i) {
