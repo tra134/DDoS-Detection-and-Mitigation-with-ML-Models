@@ -36,7 +36,7 @@ ddos-project-new/
 
 1. Prerequisites
     OS: Linux (Ubuntu recommended)
-    Software: NS-3 (version 3.35+), Python 3.8+, GCC, CMake
+    Software: NS-3 (version ns-3-dev), Python 3.8+, GCC, CMake
 
 2. Installation
 Clone the repository:
