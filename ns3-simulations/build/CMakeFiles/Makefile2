@@ -64,6 +64,7 @@ CMAKE_BINARY_DIR = /home/traphan/ns-3-dev/ddos-project-new/ns3-simulations/build
 
 # The main recursive "all" target.
 all: CMakeFiles/ddos-simulator.dir/all
+all: CMakeFiles/animation_only.dir/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -72,6 +73,7 @@ preinstall:
 
 # The main recursive "clean" target.
 clean: CMakeFiles/ddos-simulator.dir/clean
+clean: CMakeFiles/animation_only.dir/clean
 .PHONY : clean
 
 #=============================================================================
@@ -81,7 +83,7 @@ clean: CMakeFiles/ddos-simulator.dir/clean
 CMakeFiles/ddos-simulator.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ddos-simulator.dir/build.make CMakeFiles/ddos-simulator.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ddos-simulator.dir/build.make CMakeFiles/ddos-simulator.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/traphan/ns-3-dev/ddos-project-new/ns3-simulations/build/CMakeFiles --progress-num=1,2 "Built target ddos-simulator"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/traphan/ns-3-dev/ddos-project-new/ns3-simulations/build/CMakeFiles --progress-num=3,4 "Built target ddos-simulator"
 .PHONY : CMakeFiles/ddos-simulator.dir/all
 
 # Build rule for subdir invocation for target.
@@ -99,6 +101,32 @@ ddos-simulator: CMakeFiles/ddos-simulator.dir/rule
 CMakeFiles/ddos-simulator.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ddos-simulator.dir/build.make CMakeFiles/ddos-simulator.dir/clean
 .PHONY : CMakeFiles/ddos-simulator.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/animation_only.dir
+
+# All Build rule for target.
+CMakeFiles/animation_only.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/animation_only.dir/build.make CMakeFiles/animation_only.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/animation_only.dir/build.make CMakeFiles/animation_only.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/traphan/ns-3-dev/ddos-project-new/ns3-simulations/build/CMakeFiles --progress-num=1,2 "Built target animation_only"
+.PHONY : CMakeFiles/animation_only.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/animation_only.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/traphan/ns-3-dev/ddos-project-new/ns3-simulations/build/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/animation_only.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/traphan/ns-3-dev/ddos-project-new/ns3-simulations/build/CMakeFiles 0
+.PHONY : CMakeFiles/animation_only.dir/rule
+
+# Convenience name for target.
+animation_only: CMakeFiles/animation_only.dir/rule
+.PHONY : animation_only
+
+# clean rule for target.
+CMakeFiles/animation_only.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/animation_only.dir/build.make CMakeFiles/animation_only.dir/clean
+.PHONY : CMakeFiles/animation_only.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

@@ -45,3 +45,19 @@ target_link_libraries(ddos-simulator
     ${NS3_STATS_LIB}
     pthread rt
 )
+
+add_executable(animation_only src/animation.cc)
+
+target_link_libraries(animation_only
+    ${NS3_CORE_LIB}
+    ${NS3_NETWORK_LIB} 
+    ${NS3_INTERNET_LIB}
+    ${NS3_APPLICATIONS_LIB}
+    ${NS3_WIFI_LIB}
+    ${NS3_MOBILITY_LIB}
+    ${NS3_POINT_TO_POINT_LIB}
+    ${NS3_FLOW_MONITOR_LIB}
+    ${NS3_NETANIM_LIB}
+    ${NS3_STATS_LIB}
+    pthread rt
+)

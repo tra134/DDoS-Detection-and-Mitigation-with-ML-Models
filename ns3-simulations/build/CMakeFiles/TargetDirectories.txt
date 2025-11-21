@@ -1,3 +1,4 @@
 /home/traphan/ns-3-dev/ddos-project-new/ns3-simulations/build/CMakeFiles/ddos-simulator.dir
+/home/traphan/ns-3-dev/ddos-project-new/ns3-simulations/build/CMakeFiles/animation_only.dir
 /home/traphan/ns-3-dev/ddos-project-new/ns3-simulations/build/CMakeFiles/edit_cache.dir
 /home/traphan/ns-3-dev/ddos-project-new/ns3-simulations/build/CMakeFiles/rebuild_cache.dir

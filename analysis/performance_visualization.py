@@ -1,379 +1,165 @@
-import pandas as pd
+#!/usr/bin/env python3
+"""
+accurate_ns3_analyzer_v8.py
+
+- Gộp tất cả CSV theo node
+- Metrics tính trung bình trên tất cả flow cùng node
+- Latency: giây
+- Throughput: Kbps
+- Packet Delivery Ratio: sum(rx)/sum(tx)
+- Accuracy: dùng model nếu có
+- Annotation trên plot: giá trị + %
+- Đảm bảo tuyến tính theo node
+"""
+
+import os
+import glob
+import re
+import joblib
+import warnings
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from matplotlib import rcParams
-import warnings
-import os
-import joblib
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import accuracy_score
 
 warnings.filterwarnings('ignore')
+sns.set_theme()
 
-# Set style for better plots
-plt.style.use('seaborn-v0_8')
-rcParams['figure.figsize'] = 16, 12
-rcParams['font.size'] = 12
+PROJECT_ROOT = '/home/traphan/ns-3-dev/ddos-project-new'
+RESULTS_DIR = os.path.join(PROJECT_ROOT, 'results')
+os.makedirs(RESULTS_DIR, exist_ok=True)
 
-class AccurateNS3Analyzer:
-    """
-    Phân tích CHÍNH XÁC kết quả từ nhiều file NS3 simulation
-    """
-    
+CSV_PATTERN = os.path.join(PROJECT_ROOT, 'data', 'raw', 'ns3_detailed_results*.csv')
+MODEL_PATH = os.path.join(PROJECT_ROOT, 'models', 'ddos_model.pkl')
+
+class AccurateNS3AnalyzerV8:
     def __init__(self, model_path=None):
         self.model = None
         self.scaler = None
-        
+        self.feature_columns = []
+        self.all_feature_columns = []
         if model_path and os.path.exists(model_path):
-            self._load_ml_model(model_path)
-    
-    def _load_ml_model(self, model_path):
-        """Load ML model đã train"""
-        try:
-            print(f"🔍 Loading ML model from: {model_path}")
-            model_data = joblib.load(model_path)
-            self.model = model_data['model']
-            self.scaler = model_data.get('scaler', None)
-            print(f"✅ ML model loaded: {type(self.model).__name__}")
-        except Exception as e:
-            print(f"❌ Error loading ML model: {e}")
-    
-    def analyze_scenario_files(self, data_dir, node_scenarios):
-        """
-        Phân tích nhiều file CSV từ các scenarios khác nhau
-        và tính toán metrics THỰC TẾ
-        """
-        print("📊 ACCURATE MULTI-SCENARIO ANALYSIS")
-        print("=" * 60)
-        
-        metrics_data = {
-            'iot_nodes': [],
-            'latency': [],
-            'throughput': [],
-            'packet_delivery_ratio': [],
-            'detection_accuracy': []
-        }
-        
-        for nodes in node_scenarios:
-            print(f"\n🔬 Analyzing scenario: {nodes} IoT Nodes")
-            
-            # Đường dẫn file
-            file_name = f'ns3_detailed_results_{nodes}_nodes.csv'
-            file_path = os.path.join(data_dir, file_name)
-            
-            if not os.path.exists(file_path):
-                print(f"  ❌ File not found: {file_path}")
-                continue
-            
-            # Đọc và phân tích file
-            df = self._analyze_single_file(file_path, nodes)
-            if df is not None:
-                # Tính metrics THỰC TẾ
-                latency = self._calculate_real_latency(df)
-                throughput = self._calculate_real_throughput(df)
-                pdr = self._calculate_real_pdr(df)
-                accuracy = self._calculate_real_accuracy(df)
-                
-                # Lưu kết quả
-                metrics_data['iot_nodes'].append(nodes)
-                metrics_data['latency'].append(latency)
-                metrics_data['throughput'].append(throughput)
-                metrics_data['packet_delivery_ratio'].append(pdr)
-                metrics_data['detection_accuracy'].append(accuracy)
-                
-                print(f"  ✅ Results:")
-                print(f"     • Latency: {latency:.1f} ms")
-                print(f"     • Throughput: {throughput:.0f} Kbps")
-                print(f"     • PDR: {pdr:.3f} ({pdr*100:.1f}%)")
-                print(f"     • Accuracy: {accuracy:.3f} ({accuracy*100:.1f}%)")
-        
-        return pd.DataFrame(metrics_data)
-    
-    def _analyze_single_file(self, file_path, nodes):
-        """Phân tích một file CSV duy nhất"""
-        try:
-            df = pd.read_csv(file_path)
-            print(f"  📁 Loaded: {os.path.basename(file_path)}")
-            print(f"  📊 Data shape: {df.shape}")
-            
-            # Thông tin cơ bản về file
-            if 'label' in df.columns:
-                total_flows = len(df)
-                attack_flows = df['label'].sum()
-                normal_flows = total_flows - attack_flows
-                print(f"  📈 Flows: {total_flows} total, {attack_flows} attack, {normal_flows} normal")
-            
-            return df
-            
-        except Exception as e:
-            print(f"  ❌ Error reading {file_path}: {e}")
-            return None
-    
-    def _calculate_real_latency(self, df):
-        """Tính latency THỰC TẾ từ data (chỉ tính trên traffic sạch)"""
-        if 'delay_sum' not in df.columns:
-            return 0.0
-            
-        # Chỉ tính trên flows bình thường (nếu có label)
-        if 'label' in df.columns:
-            benign_flows = df[df['label'] == 0]
-            if not benign_flows.empty:
-                # delay_sum là tổng delay của flow, cần chia cho số gói tin rx
-                # Tuy nhiên ns-3 thường lưu delay_sum trung bình hoặc tổng.
-                # Ở đây ta lấy trung bình delay của các flow
-                latency_ms = benign_flows['delay_sum'].mean() * 1000
-            else:
-                latency_ms = df['delay_sum'].mean() * 1000
-        else:
-            latency_ms = df['delay_sum'].mean() * 1000
-        
-        return max(0.0, latency_ms)
-    
-    def _calculate_real_throughput(self, df):
-        """Tính throughput THỰC TẾ từ data (kbps)"""
-        if 'throughput' not in df.columns:
-            return 0.0
-            
-        # Tính throughput trung bình của các flow hợp lệ
-        if 'label' in df.columns:
-            benign_flows = df[df['label'] == 0]
-            if not benign_flows.empty:
-                throughput = benign_flows['throughput'].mean()
-            else:
-                throughput = df['throughput'].mean()
-        else:
-            throughput = df['throughput'].mean()
-            
-        # <<< SỬA: Bỏ giới hạn dưới 10.0, cho phép về 0 >>>
-        return max(0.0, throughput)
-    
-    def _calculate_real_pdr(self, df):
-        """Tính Packet Delivery Ratio THỰC TẾ"""
-        if 'packet_loss_ratio' not in df.columns:
-            return 0.0
-            
-        # PDR = 1 - packet_loss_ratio
-        # Tính trên benign flows nếu có thể
-        if 'label' in df.columns:
-            benign_flows = df[df['label'] == 0]
-            if not benign_flows.empty:
-                # Trung bình tỷ lệ mất gói của các flow sạch
-                avg_loss = benign_flows['packet_loss_ratio'].mean()
-                pdr = 1.0 - avg_loss
-            else:
-                pdr = 1.0 - df['packet_loss_ratio'].mean()
-        else:
-            pdr = 1.0 - df['packet_loss_ratio'].mean()
+            self._load_model(model_path)
 
-        # <<< SỬA: Bỏ giới hạn dưới 0.1, cho phép về 0.0 nếu mạng sập >>>
-        return max(0.0, min(1.0, pdr))
-    
-    def _calculate_real_accuracy(self, df):
-        """Tính accuracy THỰC TẾ bằng ML model"""
-        if self.model is None or self.scaler is None:
-            return self._calculate_baseline_accuracy(df)
-        
+    def _load_model(self, path):
         try:
-            # Features cần thiết (Phải khớp với lúc train)
-            feature_columns = [
-                'protocol', 'tx_packets', 'rx_packets', 'tx_bytes', 'rx_bytes',
-                'delay_sum', 'jitter_sum', 'lost_packets', 'packet_loss_ratio',
-                'throughput', 'flow_duration'
-            ]
-            
-            # Chỉ giữ các features có sẵn
-            available_features = [col for col in feature_columns if col in df.columns]
-            if not available_features or 'label' not in df.columns:
-                return self._calculate_baseline_accuracy(df)
-            
-            # Làm sạch data
-            df_clean = df.replace([np.inf, -np.inf], np.nan)
-            df_clean = df_clean.dropna(subset=available_features + ['label'])
-            
-            if df_clean.empty:
-                return self._calculate_baseline_accuracy(df)
-            
-            # Chuẩn bị data cho prediction
-            X = df_clean[available_features]
-            y_true = df_clean['label']
-            
-            # Chuẩn hóa và predict
-            X_scaled = self.scaler.transform(X)
-            y_pred = self.model.predict(X_scaled)
-            
-            # Tính accuracy
-            accuracy = accuracy_score(y_true, y_pred)
-            
-            print(f"     • ML Accuracy: {len(y_true)} samples, {accuracy:.3f}")
-            return accuracy
-            
+            data = joblib.load(path)
+            self.model = data.get('model', None)
+            self.scaler = data.get('scaler', None)
+            self.feature_columns = list(data.get('feature_names', []))
+            self.all_feature_columns = list(data.get('all_feature_names', self.feature_columns))
+            print("ML model loaded")
         except Exception as e:
-            print(f"     • ML Error: {e}, using baseline")
-            return self._calculate_baseline_accuracy(df)
-    
-    def _calculate_baseline_accuracy(self, df):
-        """Tính accuracy baseline nếu không có ML model"""
-        if 'label' not in df.columns:
-            return 0.5
-        return 0.5 # Fallback an toàn
-    
-    def plot_accurate_metrics(self, metrics_df, save_path=None):
-        """Vẽ biểu đồ với dữ liệu THỰC TẾ"""
-        print("\n🎨 PLOTTING ACCURATE PERFORMANCE METRICS")
-        print("=" * 50)
-        
-        if metrics_df.empty:
-            print("❌ No data to plot!")
+            print(f" Failed to load model: {e}")
+
+    def _extract_node_count(self, filename):
+        match = re.search(r'ns3_detailed_results_(\d+)', filename)
+        return int(match.group(1)) if match else 0
+
+    def _calc_metrics_grouped(self, df_group):
+        # df_group: tất cả flow của cùng node
+        latency = 0.0
+        throughput = 0.0
+        pdr = 0.0
+        accuracy = 0.0
+
+        if not df_group.empty:
+            # Latency: trung bình delay_sum / rx_packets
+            valid = df_group[df_group['rx_packets']>0]
+            if not valid.empty:
+                latency = float(np.nanmean(valid['delay_sum'].astype(float)/valid['rx_packets'].astype(float)))
+
+            # Throughput: chuẩn Kbps
+            if 'throughput' in df_group.columns:
+                arr = df_group['throughput'].fillna(0).astype(float)
+                if arr.max()>1e6 or np.median(arr)>20000: arr = arr/1000.0
+                throughput = float(np.mean(arr))
+
+            # Packet Delivery Ratio
+            benign = df_group[df_group.get('label',0)==0]
+            if not benign.empty and 'tx_packets' in benign.columns and 'rx_packets' in benign.columns:
+                tx_sum = benign['tx_packets'].sum()
+                rx_sum = benign['rx_packets'].sum()
+                if tx_sum>0: pdr = float(rx_sum/tx_sum)
+
+            # Accuracy
+            if self.model and 'label' in df_group.columns:
+                X_full = df_group.copy()
+                for col in self.all_feature_columns:
+                    if col not in X_full.columns: X_full[col] = 0.0
+                X_full = X_full[self.all_feature_columns]
+                X_scaled = self.scaler.transform(X_full) if self.scaler else X_full.values
+                X_final = pd.DataFrame(X_scaled, columns=self.all_feature_columns)[self.feature_columns]
+                y_true = df_group['label'].astype(int)
+                y_pred = self.model.predict(X_final)
+                accuracy = float(accuracy_score(y_true, y_pred))
+
+        return latency, throughput, pdr, accuracy
+
+    def analyze_all_files(self, csv_pattern=CSV_PATTERN):
+        files = glob.glob(csv_pattern)
+        if not files:
+            print(f"No CSV files found at {csv_pattern}")
+            return pd.DataFrame()
+
+        all_data = []
+        for f in files:
+            node = self._extract_node_count(f)
+            df = pd.read_csv(f)
+            if df.empty: continue
+            df['iot_nodes'] = node
+            all_data.append(df)
+
+        df_all = pd.concat(all_data, ignore_index=True)
+        # Group by node
+        metrics_list = []
+        for node, group in df_all.groupby('iot_nodes'):
+            latency, throughput, pdr, accuracy = self._calc_metrics_grouped(group)
+            metrics_list.append({
+                'iot_nodes': node,
+                'latency_s': latency,
+                'throughput_kbps': throughput,
+                'packet_delivery_ratio': pdr,
+                'accuracy': accuracy
+            })
+
+        df_metrics = pd.DataFrame(metrics_list).sort_values('iot_nodes')
+        return df_metrics
+
+    def plot_metrics(self, df_metrics, save_name='metrics_total.png'):
+        if df_metrics.empty:
+            print(" Empty metrics — nothing to plot")
             return
-        
-        fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-        fig.suptitle('DDoS Detection System Performance Analysis\n(ACCURATE - Based on Real NS-3 Simulation Data)', 
-                    fontsize=16, fontweight='bold', y=0.98)
-        
-        # 6.1: IoT Nodes vs. Latency
-        self._plot_accurate_latency(axes[0, 0], metrics_df)
-        
-        # 6.2: IoT Nodes vs. Throughput
-        self._plot_accurate_throughput(axes[0, 1], metrics_df)
-        
-        # 6.3: IoT Nodes vs. Packet Delivery Ratio
-        self._plot_accurate_pdr(axes[1, 0], metrics_df)
-        
-        # 6.4: IoT Nodes vs. Detection Accuracy
-        self._plot_accurate_accuracy(axes[1, 1], metrics_df)
-        
-        plt.tight_layout()
-        plt.subplots_adjust(top=0.93)
-        
-        # Save plot
-        if save_path is None:
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            save_path = os.path.join(base_dir, 'results', 'accurate_performance_metrics.png')
-        
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        plt.savefig(save_path, dpi=300, bbox_inches='tight', facecolor='white')
-        print(f"✅ Accurate metrics saved to: {save_path}")
-        
-        plt.show()
-        
-        # Hiển thị summary
-        self._print_analysis_summary(metrics_df)
-    
-    def _plot_accurate_latency(self, ax, metrics_df):
-        ax.plot(metrics_df['iot_nodes'], metrics_df['latency'], 
-               marker='o', linewidth=3, markersize=10, color='#E74C3C', 
-               label='Real Latency')
-        ax.set_xlabel('Number of IoT Nodes', fontweight='bold', fontsize=12)
-        ax.set_ylabel('Average Latency (ms)', fontweight='bold', fontsize=12)
-        ax.set_title('6.1: IoT Nodes vs. Latency\n(Lower is Better)', 
-                    fontweight='bold', fontsize=13, pad=20)
-        ax.grid(True, alpha=0.3)
-        ax.legend(fontsize=11)
-        
-        for i, (x, y) in enumerate(zip(metrics_df['iot_nodes'], metrics_df['latency'])):
-            ax.annotate(f'{y:.1f}ms', (x, y), textcoords="offset points", 
-                       xytext=(0,12), ha='center', fontsize=10, fontweight='bold',
-                       bbox=dict(boxstyle="round,pad=0.3", facecolor='white', alpha=0.8))
-    
-    def _plot_accurate_throughput(self, ax, metrics_df):
-        ax.plot(metrics_df['iot_nodes'], metrics_df['throughput'], 
-               marker='s', linewidth=3, markersize=10, color='#2ECC71',
-               label='Real Throughput')
-        ax.set_xlabel('Number of IoT Nodes', fontweight='bold', fontsize=12)
-        ax.set_ylabel('Average Throughput (Kbps)', fontweight='bold', fontsize=12)
-        ax.set_title('6.2: IoT Nodes vs. Throughput\n(Higher is Better)', 
-                    fontweight='bold', fontsize=13, pad=20)
-        ax.grid(True, alpha=0.3)
-        ax.legend(fontsize=11)
-        
-        for i, (x, y) in enumerate(zip(metrics_df['iot_nodes'], metrics_df['throughput'])):
-            ax.annotate(f'{y:.0f}Kbps', (x, y), textcoords="offset points", 
-                       xytext=(0,12), ha='center', fontsize=10, fontweight='bold',
-                       bbox=dict(boxstyle="round,pad=0.3", facecolor='white', alpha=0.8))
-    
-    def _plot_accurate_pdr(self, ax, metrics_df):
-        pdr_percentage = metrics_df['packet_delivery_ratio'] * 100
-        ax.plot(metrics_df['iot_nodes'], pdr_percentage,
-               marker='^', linewidth=3, markersize=10, color='#3498DB',
-               label='Real PDR')
-        ax.set_xlabel('Number of IoT Nodes', fontweight='bold', fontsize=12)
-        ax.set_ylabel('Packet Delivery Ratio (%)', fontweight='bold', fontsize=12)
-        ax.set_title('6.3: IoT Nodes vs. Packet Delivery Ratio\n(Higher is Better)', 
-                    fontweight='bold', fontsize=13, pad=20)
-        ax.grid(True, alpha=0.3)
-        ax.legend(fontsize=11)
-        ax.set_ylim(0, 105)
-        
-        for i, (x, y) in enumerate(zip(metrics_df['iot_nodes'], pdr_percentage)):
-            ax.annotate(f'{y:.1f}%', (x, y), textcoords="offset points", 
-                       xytext=(0,12), ha='center', fontsize=10, fontweight='bold',
-                       bbox=dict(boxstyle="round,pad=0.3", facecolor='white', alpha=0.8))
-    
-    def _plot_accurate_accuracy(self, ax, metrics_df):
-        accuracy_percentage = metrics_df['detection_accuracy'] * 100
-        ax.plot(metrics_df['iot_nodes'], accuracy_percentage,
-               marker='D', linewidth=3, markersize=10, color='#9B59B6',
-               label='Real Accuracy')
-        ax.set_xlabel('Number of IoT Nodes', fontweight='bold', fontsize=12)
-        ax.set_ylabel('Detection Accuracy (%)', fontweight='bold', fontsize=12)
-        ax.set_title('6.4: IoT Nodes vs. Detection Accuracy\n(Using Real ML Model)', 
-                    fontweight='bold', fontsize=13, pad=20)
-        ax.grid(True, alpha=0.3)
-        ax.legend(fontsize=11)
-        ax.set_ylim(0, 105)
-        
-        for i, (x, y) in enumerate(zip(metrics_df['iot_nodes'], accuracy_percentage)):
-            ax.annotate(f'{y:.1f}%', (x, y), textcoords="offset points", 
-                       xytext=(0,12), ha='center', fontsize=10, fontweight='bold',
-                       bbox=dict(boxstyle="round,pad=0.3", facecolor='white', alpha=0.8))
-    
-    def _print_analysis_summary(self, metrics_df):
-        """In summary của analysis"""
-        print("\n📋 ANALYSIS SUMMARY")
-        print("=" * 50)
-        print(metrics_df.to_string(index=False))
-        print("\n📈 TRENDS OBSERVED:")
-        
-        if len(metrics_df) > 1:
-            latency_trend = "↑ Increasing" if metrics_df['latency'].iloc[-1] > metrics_df['latency'].iloc[0] else "↓ Decreasing"
-            throughput_trend = "↑ Increasing" if metrics_df['throughput'].iloc[-1] > metrics_df['throughput'].iloc[0] else "↓ Decreasing"
-            pdr_trend = "↑ Increasing" if metrics_df['packet_delivery_ratio'].iloc[-1] > metrics_df['packet_delivery_ratio'].iloc[0] else "↓ Decreasing"
-            accuracy_trend = "↑ Increasing" if metrics_df['detection_accuracy'].iloc[-1] > metrics_df['detection_accuracy'].iloc[0] else "↓ Decreasing"
-            
-            print(f"   • Latency: {latency_trend} with more IoT nodes")
-            print(f"   • Throughput: {throughput_trend} with more IoT nodes")
-            print(f"   • PDR: {pdr_trend} with more IoT nodes")
-            print(f"   • Accuracy: {accuracy_trend} with more IoT nodes")
+        fig, axes = plt.subplots(2,2,figsize=(18,12))
 
-def main():
-    """Main function cho accurate analysis"""
-    print("🚀 ACCURATE NS-3 PERFORMANCE ANALYSIS")
-    print("=" * 60)
-    
-    # Configuration
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    data_dir = os.path.join(base_dir, 'data', 'raw')
-    model_path = os.path.join(base_dir, 'models', 'ddos_model.pkl')
-    node_scenarios = [10, 20, 30, 40, 50]
-    
-    print(f"📁 Data directory: {data_dir}")
-    print(f"🤖 ML model: {model_path}")
-    print(f"🔬 Scenarios: {node_scenarios}")
-    
-    # Khởi tạo analyzer
-    analyzer = AccurateNS3Analyzer(model_path=model_path)
-    
-    # Phân tích các file
-    metrics_df = analyzer.analyze_scenario_files(data_dir, node_scenarios)
-    
-    if not metrics_df.empty:
-        # Vẽ biểu đồ
-        analyzer.plot_accurate_metrics(metrics_df)
-        print("\n✅ ACCURATE ANALYSIS COMPLETED!")
-        print("🎯 All metrics based on REAL simulation data")
-    else:
-        print("\n❌ No data found for analysis!")
-        print("💡 Please run the NS-3 simulations first")
+        def plot_line(ax,x,y,title,ylabel,color,percent=False):
+            ax.plot(x,y,marker='o',color=color,linewidth=2)
+            ax.set_title(title,fontweight='bold')
+            ax.set_xlabel("Number of IoT Nodes",fontweight='bold')
+            ax.set_ylabel(ylabel,fontweight='bold')
+            ax.grid(True,alpha=0.3)
+            for xi, yi in zip(x,y):
+                val = yi*100 if percent else yi
+                fmt = "{:.1f}%" if percent else "{:.3f}" if ylabel=="Latency (s)" else "{:.0f}"
+                ax.annotate(fmt.format(val),(xi,yi),textcoords="offset points",xytext=(0,10),
+                            ha='center',fontsize=10,fontweight='bold',
+                            bbox=dict(boxstyle="round,pad=0.3",facecolor='white',alpha=0.8))
+
+        plot_line(axes[0,0], df_metrics['iot_nodes'], df_metrics['latency_s'], "Latency vs IoT Nodes","Latency (s)","#E74C3C")
+        plot_line(axes[0,1], df_metrics['iot_nodes'], df_metrics['throughput_kbps'], "Throughput vs IoT Nodes","Throughput (Kbps)","#2ECC71")
+        plot_line(axes[1,0], df_metrics['iot_nodes'], df_metrics['packet_delivery_ratio'], "Packet Delivery Ratio vs IoT Nodes","Packet Delivery Ratio (%)","#3498DB",percent=True)
+        plot_line(axes[1,1], df_metrics['iot_nodes'], df_metrics['accuracy'], "Accuracy vs IoT Nodes","Accuracy (%)","#9B59B6",percent=True)
+
+        plt.tight_layout()
+        save_path = os.path.join(RESULTS_DIR, save_name)
+        plt.savefig(save_path,dpi=300)
+        plt.close()
+        print(f"Plot saved: {save_path}")
+        return save_path
 
 if __name__ == "__main__":
-    main()
+    analyzer = AccurateNS3AnalyzerV8(model_path=MODEL_PATH)
+    df_metrics = analyzer.analyze_all_files()
+    print("\nMetrics summary:\n", df_metrics)
+    analyzer.plot_metrics(df_metrics)

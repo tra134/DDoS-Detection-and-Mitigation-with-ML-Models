@@ -129,6 +129,43 @@ ddos-simulator/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ddos-simulator.dir/build.make CMakeFiles/ddos-simulator.dir/build
 .PHONY : ddos-simulator/fast
 
+#=============================================================================
+# Target rules for targets named animation_only
+
+# Build rule for target.
+animation_only: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 animation_only
+.PHONY : animation_only
+
+# fast build rule for target.
+animation_only/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/animation_only.dir/build.make CMakeFiles/animation_only.dir/build
+.PHONY : animation_only/fast
+
+src/animation.o: src/animation.cc.o
+.PHONY : src/animation.o
+
+# target to build an object file
+src/animation.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/animation_only.dir/build.make CMakeFiles/animation_only.dir/src/animation.cc.o
+.PHONY : src/animation.cc.o
+
+src/animation.i: src/animation.cc.i
+.PHONY : src/animation.i
+
+# target to preprocess a source file
+src/animation.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/animation_only.dir/build.make CMakeFiles/animation_only.dir/src/animation.cc.i
+.PHONY : src/animation.cc.i
+
+src/animation.s: src/animation.cc.s
+.PHONY : src/animation.s
+
+# target to generate assembly for a file
+src/animation.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/animation_only.dir/build.make CMakeFiles/animation_only.dir/src/animation.cc.s
+.PHONY : src/animation.cc.s
+
 src/ddos-simulator.o: src/ddos-simulator.cc.o
 .PHONY : src/ddos-simulator.o
 
@@ -161,7 +198,11 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... animation_only"
 	@echo "... ddos-simulator"
+	@echo "... src/animation.o"
+	@echo "... src/animation.i"
+	@echo "... src/animation.s"
 	@echo "... src/ddos-simulator.o"
 	@echo "... src/ddos-simulator.i"
 	@echo "... src/ddos-simulator.s"

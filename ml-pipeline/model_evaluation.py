@@ -3,135 +3,146 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
-from sklearn.metrics import precision_recall_curve, roc_curve, auc, classification_report, confusion_matrix
+import glob
+import warnings
+from sklearn.metrics import accuracy_score
+warnings.filterwarnings('ignore')
 
-class ModelEvaluator:
-    def __init__(self, model, X_test, y_test, feature_names=None):
-        """
-        Khởi tạo bộ đánh giá.
-        :param feature_names: Danh sách tên các đặc trưng (để vẽ biểu đồ Feature Importance)
-        """
-        self.model = model
-        self.X_test = X_test
-        self.y_test = y_test
-        self.feature_names = feature_names
-        self.save_dir = '../results'
-        
-        # Tự động tạo thư mục lưu kết quả
-        os.makedirs(self.save_dir, exist_ok=True)
+sns.set_style("whitegrid")
+plt.rcParams['figure.figsize'] = (16, 12)
+plt.rcParams['font.size'] = 12
 
-        # 1. Dự đoán nhãn (Label)
-        self.y_pred = model.predict(X_test)
+# --- CẤU HÌNH ĐƯỜNG DẪN ---
+PROJECT_ROOT = '/home/traphan/ns-3-dev/ddos-project-new'
+RESULTS_DIR = os.path.join(PROJECT_ROOT, 'results')
+os.makedirs(RESULTS_DIR, exist_ok=True)
 
-        # 2. Dự đoán xác suất (Probability) - Xử lý linh hoạt cho SVM và RF
-        if hasattr(model, "predict_proba"):
-            # Random Forest, Decision Tree, etc.
-            self.y_pred_proba = model.predict_proba(X_test)[:, 1]
-        elif hasattr(model, "decision_function"):
-            # SVM (LinearSVC), Gradient Boosting (đôi khi)
-            # ROC curve có thể làm việc với decision_function score
-            self.y_pred_proba = model.decision_function(X_test)
-        else:
-            self.y_pred_proba = None # Không thể vẽ ROC/PR
-            
-    def comprehensive_evaluation(self):
-        """Đánh giá toàn diện model"""
-        print("\n📊 Comprehensive Model Evaluation")
-        print("=" * 50)
-        
-        # 1. Classification Report
-        print("Classification Report:")
-        print(classification_report(self.y_test, self.y_pred))
-        
-        # 2. Confusion Matrix
-        cm = confusion_matrix(self.y_test, self.y_pred)
-        self.plot_confusion_matrix(cm)
-        
-        # 3. ROC & PR Curves (Chỉ vẽ nếu có xác suất/điểm số)
-        if self.y_pred_proba is not None:
-            self.plot_roc_curve()
-            self.plot_precision_recall_curve()
-        
-        # 4. Feature Importance (Hỗ trợ cả Tree và Linear models)
-        self.plot_feature_importance()
 
-    def plot_confusion_matrix(self, cm):
-        plt.figure(figsize=(8, 6))
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
-        plt.title(f'Confusion Matrix - {type(self.model).__name__}')
-        plt.ylabel('Actual')
-        plt.xlabel('Predicted')
-        plt.tight_layout()
-        plt.savefig(os.path.join(self.save_dir, 'confusion_matrix.png'), dpi=300)
-        plt.show()
-        plt.close()
+class NS3FlowAnalyzer:
+    """Analyzer tự động đọc nhiều file FlowMonitor CSV từ NS-3"""
 
-    def plot_roc_curve(self):
-        fpr, tpr, _ = roc_curve(self.y_test, self.y_pred_proba)
-        roc_auc = auc(fpr, tpr)
-        
-        plt.figure(figsize=(8, 6))
-        plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.2f})')
-        plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.05])
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title(f'ROC Curve - {type(self.model).__name__}')
-        plt.legend(loc="lower right")
-        plt.tight_layout()
-        plt.savefig(os.path.join(self.save_dir, 'roc_curve.png'), dpi=300)
-        plt.show()
-        plt.close()
+    def __init__(self):
+        self.df_all = pd.DataFrame()
+        self.metrics_df = pd.DataFrame()
 
-    def plot_precision_recall_curve(self):
-        precision, recall, _ = precision_recall_curve(self.y_test, self.y_pred_proba)
-        
-        plt.figure(figsize=(8, 6))
-        plt.plot(recall, precision, color='blue', lw=2)
-        plt.xlabel('Recall')
-        plt.ylabel('Precision')
-        plt.title(f'Precision-Recall Curve - {type(self.model).__name__}')
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.05])
-        plt.tight_layout()
-        plt.savefig(os.path.join(self.save_dir, 'precision_recall_curve.png'), dpi=300)
-        plt.show()
-        plt.close()
+    def load_all_csv(self, pattern=None):
+        """Load tất cả file CSV theo pattern"""
+        if pattern is None:
+            pattern = os.path.join(RESULTS_DIR, "ns3_detailed_results_*.csv")
 
-    def plot_feature_importance(self):
-        """Vẽ Feature Importance (Hỗ trợ cả Random Forest và SVM)"""
-        importances = None
-        
-        # Trường hợp 1: Các mô hình cây (Random Forest, Decision Tree)
-        if hasattr(self.model, 'feature_importances_'):
-            importances = self.model.feature_importances_
-            
-        # Trường hợp 2: Các mô hình tuyến tính (LinearSVC, Logistic Regression)
-        elif hasattr(self.model, 'coef_'):
-            # Lấy giá trị tuyệt đối của hệ số để đánh giá mức độ ảnh hưởng
-            importances = np.abs(self.model.coef_[0])
-            
-        if importances is None:
-            print("ℹ️ Model này không hỗ trợ Feature Importance.")
+        files = glob.glob(pattern)
+        if not files:
+            print(" Do not see the CSV file.")
+            return False
+
+        df_list = []
+        for f in files:
+            try:
+                df = pd.read_csv(f, skipinitialspace=True)
+                df.columns = df.columns.str.strip()
+                df_list.append(df)
+                print(f"Loaded {f} ({df.shape[0]} rows)")
+            except Exception as e:
+                print(f"Error reading {f}: {e}")
+
+        if df_list:
+            self.df_all = pd.concat(df_list, ignore_index=True)
+            self.df_all.replace([np.inf, -np.inf], np.nan, inplace=True)
+            self.df_all.fillna(0, inplace=True)
+            print(f"Total rows: {self.df_all.shape[0]}")
+            return True
+
+        return False
+
+    def calculate_metrics(self, scenario_col=None):
+        """Tính metrics cho mỗi scenario"""
+        if self.df_all.empty:
+            print("No data loaded.")
             return
 
-        # Nếu không có tên đặc trưng, tạo tên giả (Feature 0, Feature 1...)
-        if self.feature_names is None:
-            self.feature_names = [f"Feature {i}" for i in range(len(importances))]
-            
-        # Sắp xếp và vẽ
-        indices = np.argsort(importances)[::-1]
-        
-        plt.figure(figsize=(10, 6))
-        plt.title(f"Feature Importance - {type(self.model).__name__}")
-        
-        # Chỉ vẽ top 15 đặc trưng quan trọng nhất để biểu đồ không bị rối
-        top_n = 15
-        plt.bar(range(min(top_n, len(importances))), importances[indices][:top_n], align="center")
-        plt.xticks(range(min(top_n, len(importances))), 
-                   [self.feature_names[i] for i in indices[:top_n]], rotation=45, ha='right')
+        # Nếu không có cột scenario -> tạo scenario tự động
+        if scenario_col is None:
+            self.df_all['scenario'] = np.arange(len(self.df_all))
+        else:
+            self.df_all['scenario'] = self.df_all[scenario_col]
+
+        metrics = []
+        for scenario, df_s in self.df_all.groupby('scenario'):
+
+            benign = df_s[df_s['label'] == 0]
+            latency = 0.0
+            throughput = 0.0
+            pdr = 0.0
+
+            if not benign.empty:
+
+                # --- Latency: delay_sum đơn vị = giây -> đổi sang ms ---
+                valid_rx = benign[benign['rx_packets'] > 0]
+                if not valid_rx.empty:
+                    latency = (valid_rx['delay_sum'] / valid_rx['rx_packets']).mean() * 1000  # <-- FIXED: *1000
+
+                # Throughput
+                valid_thr = benign[benign['throughput'] > 0]
+                if not valid_thr.empty:
+                    throughput = valid_thr['throughput'].mean()
+
+                # Packet Delivery Ratio
+                pdr = 1 - benign['packet_loss_ratio'].mean()
+
+            metrics.append({
+                'scenario': scenario,
+                'latency_ms': latency,
+                'throughput_kbps': throughput,
+                'packet_delivery_ratio': pdr
+            })
+
+        self.metrics_df = pd.DataFrame(metrics)
+        return self.metrics_df
+
+    def plot_metrics(self, save_path=None):
+        """Vẽ biểu đồ tổng quan metrics"""
+        if self.metrics_df.empty:
+            print(" No metrics calculated.")
+            return
+
+        fig, axes = plt.subplots(1, 3, figsize=(20, 6))
+
+        # Latency
+        axes[0].plot(self.metrics_df['scenario'], self.metrics_df['latency_ms'],
+                     marker='o', color='red', linewidth=2)
+        axes[0].set_title('Latency per Scenario (ms)')
+        axes[0].set_xlabel('Scenario')
+        axes[0].set_ylabel('Latency (ms)')
+        axes[0].grid(True, alpha=0.3)
+
+        # Throughput
+        axes[1].plot(self.metrics_df['scenario'], self.metrics_df['throughput_kbps'],
+                     marker='s', color='green', linewidth=2)
+        axes[1].set_title('Throughput per Scenario (Kbps)')
+        axes[1].set_xlabel('Scenario')
+        axes[1].set_ylabel('Throughput (Kbps)')
+        axes[1].grid(True, alpha=0.3)
+
+        # PDR
+        axes[2].plot(self.metrics_df['scenario'], self.metrics_df['packet_delivery_ratio'] * 100,
+                     marker='^', color='blue', linewidth=2)
+        axes[2].set_title('Packet Delivery Ratio per Scenario (%)')
+        axes[2].set_xlabel('Scenario')
+        axes[2].set_ylabel('PDR (%)')
+        axes[2].set_ylim(0, 100)
+        axes[2].grid(True, alpha=0.3)
+
         plt.tight_layout()
-        plt.savefig(os.path.join(self.save_dir, 'feature_importance.png'), dpi=300)
+
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            print(f"Plot saved to {save_path}")
+
         plt.show()
-        plt.close()
+
+
+# Example usage:
+# analyzer = NS3FlowAnalyzer()
+# analyzer.load_all_csv()
+# analyzer.calculate_metrics()
+# analyzer.plot_metrics(save_path=os.path.join(RESULTS_DIR, 'ns3_metrics.png'))

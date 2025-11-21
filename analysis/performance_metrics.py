@@ -2,321 +2,148 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-import json
+import os
+import glob
 import warnings
+from sklearn.metrics import accuracy_score
 warnings.filterwarnings('ignore')
 
-class NS3PerformanceAnalyzer:
-    """Phân tích hiệu suất từ NS3 simulation results"""
-    
-    def __init__(self, results_file=None):
-        self.results_file = results_file
-        self.df = None
-        self.metrics = {}
-        
-    def load_ns3_results(self, file_path):
-        """Load kết quả từ NS3 simulation"""
-        try:
-            self.df = pd.read_csv(file_path)
-            print(f"✅ Loaded NS3 results: {self.df.shape}")
-            return True
-        except Exception as e:
-            print(f"❌ Error loading NS3 results: {e}")
-            return False
-    
-    def calculate_metrics(self, iot_nodes_range=None, attackers_range=None):
-        """Tính toán các metrics hiệu suất"""
-        if iot_nodes_range is None:
-            iot_nodes_range = [10, 20, 30, 40, 50]
-        
-        if attackers_range is None:
-            attackers_range = [2, 4, 6, 8, 10]
-        
-        metrics_data = {
-            'iot_nodes': [],
-            'attackers': [],
-            'latency': [],
-            'throughput': [],
-            'packet_delivery_ratio': [],
-            'detection_accuracy': []
-        }
-        
-        # Giả lập dữ liệu từ NS3 simulation
-        for nodes in iot_nodes_range:
-            for attackers in attackers_range:
-                if attackers >= nodes:
-                    continue
-                    
-                # Tính toán metrics dựa trên số lượng nodes và attackers
-                latency = self.calculate_latency(nodes, attackers)
-                throughput = self.calculate_throughput(nodes, attackers)
-                pdr = self.calculate_packet_delivery_ratio(nodes, attackers)
-                accuracy = self.calculate_detection_accuracy(nodes, attackers)
-                
-                metrics_data['iot_nodes'].append(nodes)
-                metrics_data['attackers'].append(attackers)
-                metrics_data['latency'].append(latency)
-                metrics_data['throughput'].append(throughput)
-                metrics_data['packet_delivery_ratio'].append(pdr)
-                metrics_data['detection_accuracy'].append(accuracy)
-        
-        self.metrics_df = pd.DataFrame(metrics_data)
-        return self.metrics_df
-    
-    def calculate_latency(self, nodes, attackers):
-        """Tính latency dựa trên số nodes và attackers"""
-        base_latency = 10  # ms
-        node_impact = nodes * 0.5
-        attacker_impact = attackers * 2.0
-        return base_latency + node_impact + attacker_impact + np.random.normal(0, 2)
-    
-    def calculate_throughput(self, nodes, attackers):
-        """Tính throughput dựa trên số nodes và attackers"""
-        base_throughput = 1000  # Kbps
-        node_impact = nodes * 20
-        attacker_impact = attackers * -50
-        throughput = base_throughput + node_impact + attacker_impact
-        return max(throughput + np.random.normal(0, 50), 100)
-    
-    def calculate_packet_delivery_ratio(self, nodes, attackers):
-        """Tính packet delivery ratio"""
-        base_pdr = 0.95  # 95%
-        node_impact = -0.001 * nodes
-        attacker_impact = -0.01 * attackers
-        pdr = base_pdr + node_impact + attacker_impact + np.random.normal(0, 0.02)
-        return max(min(pdr, 1.0), 0.5)
-    
-    def calculate_detection_accuracy(self, nodes, attackers):
-        """Tính detection accuracy"""
-        base_accuracy = 0.85  # 85%
-        node_impact = -0.001 * nodes
-        attacker_impact = 0.005 * attackers  # More attackers might be easier to detect
-        accuracy = base_accuracy + node_impact + attacker_impact + np.random.normal(0, 0.03)
-        return max(min(accuracy, 1.0), 0.6)
-    
-    def plot_performance_metrics(self, save_path=None):
-        """Vẽ tất cả performance metrics"""
-        fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-        fig.suptitle('DDoS Detection System Performance Metrics', fontsize=16, fontweight='bold')
-        
-        # 6.1: Number of IOT Nodes vs. Latency (ms)
-        self._plot_latency_vs_nodes(axes[0, 0])
-        
-        # 6.2: Number of IOT Nodes vs. Throughput (Kbps)
-        self._plot_throughput_vs_nodes(axes[0, 1])
-        
-        # 6.3: Number of IOT Nodes vs. Packet Delivery Ratio (%)
-        self._plot_pdr_vs_nodes(axes[1, 0])
-        
-        # 6.4: Number of IOT Nodes vs. Detection Accuracy (%)
-        self._plot_accuracy_vs_nodes(axes[1, 1])
-        
-        plt.tight_layout()
-        
-        if save_path:
-            plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            print(f"✅ Performance metrics saved to {save_path}")
-        
-        plt.show()
-    
-    def _plot_latency_vs_nodes(self, ax):
-        """Plot IoT Nodes vs Latency"""
-        if not hasattr(self, 'metrics_df'):
-            self.calculate_metrics()
-        
-        unique_nodes = sorted(self.metrics_df['iot_nodes'].unique())
-        latency_means = []
-        latency_stds = []
-        
-        for nodes in unique_nodes:
-            node_data = self.metrics_df[self.metrics_df['iot_nodes'] == nodes]
-            latency_means.append(node_data['latency'].mean())
-            latency_stds.append(node_data['latency'].std())
-        
-        ax.errorbar(unique_nodes, latency_means, yerr=latency_stds, 
-                   marker='o', linewidth=2, capsize=5, capthick=2)
-        ax.set_xlabel('Number of IoT Nodes')
-        ax.set_ylabel('Latency (ms)')
-        ax.set_title('IoT Nodes vs. Latency')
-        ax.grid(True, alpha=0.3)
-        ax.set_xticks(unique_nodes)
-    
-    def _plot_throughput_vs_nodes(self, ax):
-        """Plot IoT Nodes vs Throughput"""
-        unique_nodes = sorted(self.metrics_df['iot_nodes'].unique())
-        throughput_means = []
-        throughput_stds = []
-        
-        for nodes in unique_nodes:
-            node_data = self.metrics_df[self.metrics_df['iot_nodes'] == nodes]
-            throughput_means.append(node_data['throughput'].mean())
-            throughput_stds.append(node_data['throughput'].std())
-        
-        ax.errorbar(unique_nodes, throughput_means, yerr=throughput_stds,
-                   marker='s', linewidth=2, capsize=5, capthick=2, color='green')
-        ax.set_xlabel('Number of IoT Nodes')
-        ax.set_ylabel('Throughput (Kbps)')
-        ax.set_title('IoT Nodes vs. Throughput')
-        ax.grid(True, alpha=0.3)
-        ax.set_xticks(unique_nodes)
-    
-    def _plot_pdr_vs_nodes(self, ax):
-        """Plot IoT Nodes vs Packet Delivery Ratio"""
-        unique_nodes = sorted(self.metrics_df['iot_nodes'].unique())
-        pdr_means = []
-        pdr_stds = []
-        
-        for nodes in unique_nodes:
-            node_data = self.metrics_df[self.metrics_df['iot_nodes'] == nodes]
-            pdr_means.append(node_data['packet_delivery_ratio'].mean() * 100)  # Convert to percentage
-            pdr_stds.append(node_data['packet_delivery_ratio'].std() * 100)
-        
-        ax.errorbar(unique_nodes, pdr_means, yerr=pdr_stds,
-                   marker='^', linewidth=2, capsize=5, capthick=2, color='orange')
-        ax.set_xlabel('Number of IoT Nodes')
-        ax.set_ylabel('Packet Delivery Ratio (%)')
-        ax.set_title('IoT Nodes vs. Packet Delivery Ratio')
-        ax.grid(True, alpha=0.3)
-        ax.set_xticks(unique_nodes)
-        ax.set_ylim(50, 100)
-    
-    def _plot_accuracy_vs_nodes(self, ax):
-        """Plot IoT Nodes vs Detection Accuracy"""
-        unique_nodes = sorted(self.metrics_df['iot_nodes'].unique())
-        accuracy_means = []
-        accuracy_stds = []
-        
-        for nodes in unique_nodes:
-            node_data = self.metrics_df[self.metrics_df['iot_nodes'] == nodes]
-            accuracy_means.append(node_data['detection_accuracy'].mean() * 100)  # Convert to percentage
-            accuracy_stds.append(node_data['detection_accuracy'].std() * 100)
-        
-        ax.errorbar(unique_nodes, accuracy_means, yerr=accuracy_stds,
-                   marker='d', linewidth=2, capsize=5, capthick=2, color='red')
-        ax.set_xlabel('Number of IoT Nodes')
-        ax.set_ylabel('Detection Accuracy (%)')
-        ax.set_title('IoT Nodes vs. Detection Accuracy')
-        ax.grid(True, alpha=0.3)
-        ax.set_xticks(unique_nodes)
-        ax.set_ylim(60, 100)
+sns.set_style("whitegrid")
+plt.rcParams['figure.figsize'] = (16, 12)
+plt.rcParams['font.size'] = 12
 
-class AdvancedMetricsVisualizer:
-    """Advanced visualization for comparative analysis"""
+# --- CẤU HÌNH ĐƯỜNG DẪN ---
+PROJECT_ROOT = '/home/traphan/ns-3-dev/ddos-project-new'
+DATA_DIR = os.path.join(PROJECT_ROOT, 'data/raw')      # thư mục CSV
+RESULTS_DIR = os.path.join(PROJECT_ROOT, 'results')    # thư mục lưu plot
+os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(RESULTS_DIR, exist_ok=True)
+
+class NS3FlowAnalyzer:
+    """Analyzer tự động đọc nhiều file FlowMonitor CSV từ NS-3"""
     
     def __init__(self):
-        self.metrics_data = {}
+        self.df_all = pd.DataFrame()
+        self.metrics_df = pd.DataFrame()
     
-    def add_algorithm_metrics(self, algorithm_name, metrics_df):
-        """Thêm metrics data cho algorithm"""
-        self.metrics_data[algorithm_name] = metrics_df
+    def load_all_csv(self, pattern=None):
+        """Load tất cả file CSV theo pattern"""
+        if pattern is None:
+            pattern = os.path.join(DATA_DIR, "ns3_detailed_results_*.csv")
+        files = glob.glob(pattern)
+        if not files:
+            print(" Don't find CSV files...")
+            return False
+        
+        df_list = []
+        for f in files:
+            try:
+                df = pd.read_csv(f, skipinitialspace=True)
+                df.columns = df.columns.str.strip()
+                df_list.append(df)
+                print(f"Loaded {f} ({df.shape[0]} rows)")
+            except Exception as e:
+                print(f" Error reading {f}: {e}")
+        
+        if df_list:
+            self.df_all = pd.concat(df_list, ignore_index=True)
+            # fill nan/infinity
+            self.df_all.replace([np.inf, -np.inf], np.nan, inplace=True)
+            self.df_all.fillna(0, inplace=True)
+            print(f"Total rows: {self.df_all.shape[0]}")
+            return True
+        return False
     
-    def plot_comparative_analysis(self, save_path=None):
-        """Vẽ comparative analysis giữa các algorithms"""
-        if not self.metrics_data:
-            print("❌ No metrics data available")
+    def calculate_metrics(self, scenario_col=None):
+        """
+        Tính metrics cho mỗi scenario, theo Hướng 1:
+        → Dùng TẤT CẢ các flow có rx_packets > 0, không lọc benign nữa.
+        """
+        if self.df_all.empty:
+            print("No data loaded.")
             return
         
-        fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-        fig.suptitle('Comparative Analysis of DDoS Detection Algorithms', fontsize=16, fontweight='bold')
+        # Nếu không có cột scenario, tự tạo 'scenario'
+        if scenario_col is None:
+            self.df_all['scenario'] = np.arange(len(self.df_all))
+        else:
+            self.df_all['scenario'] = self.df_all[scenario_col]
         
-        algorithms = list(self.metrics_data.keys())
-        colors = ['blue', 'green', 'red', 'orange', 'purple']
+        metrics = []
+        for scenario, df_s in self.df_all.groupby('scenario'):
+            valid = df_s[df_s['rx_packets'] > 0]
+
+            latency = 0.0
+            throughput = 0.0
+            pdr = 0.0
+            
+            if not valid.empty:
+                latency = (valid['delay_sum'] / valid['rx_packets']).mean() * 1000
+                
+                valid_tp = valid[valid['throughput'] > 0]
+                if not valid_tp.empty:
+                    throughput = valid_tp['throughput'].mean()
+                
+                pdr = 1 - valid['packet_loss_ratio'].mean()
+            
+            metrics.append({
+                'scenario': scenario,
+                'latency_ms': latency,
+                'throughput_kbps': throughput,
+                'packet_delivery_ratio': pdr
+            })
         
-        # Latency comparison
-        self._plot_comparative_latency(axes[0, 0], algorithms, colors)
+        self.metrics_df = pd.DataFrame(metrics)
+        return self.metrics_df
+    
+    def plot_metrics(self, save_path=None, metrics_to_plot=None):
+        """
+        Vẽ biểu đồ cho tất cả metrics.
+
+        - metrics_to_plot: list tên cột trong self.metrics_df để vẽ. 
+          Nếu None → tự động lấy tất cả trừ cột 'scenario'.
+        """
+        if self.metrics_df.empty:
+            print(" No metrics calculated.")
+            return
         
-        # Throughput comparison
-        self._plot_comparative_throughput(axes[0, 1], algorithms, colors)
+        if metrics_to_plot is None:
+            metrics_to_plot = [c for c in self.metrics_df.columns if c != 'scenario']
         
-        # PDR comparison
-        self._plot_comparative_pdr(axes[1, 0], algorithms, colors)
+        n = len(metrics_to_plot)
+        fig, axes = plt.subplots(1, n, figsize=(6*n, 5))
         
-        # Accuracy comparison
-        self._plot_comparative_accuracy(axes[1, 1], algorithms, colors)
+        if n == 1:
+            axes = [axes]
+        
+        for i, col in enumerate(metrics_to_plot):
+            y = self.metrics_df[col]
+            
+            # Nếu giá trị 0-1, hiển thị %
+            if y.max() <= 1:
+                y_plot = y*100
+                ylabel = f"{col} (%)"
+            else:
+                y_plot = y
+                ylabel = col
+            
+            axes[i].plot(self.metrics_df['scenario'], y_plot, marker='o', linewidth=2)
+            axes[i].set_title(f"{col} per Scenario")
+            axes[i].set_xlabel("Scenario")
+            axes[i].set_ylabel(ylabel)
+            axes[i].grid(True, alpha=0.3)
+            axes[i].set_ylim(0, max(y_plot.max()*1.1, 1))
         
         plt.tight_layout()
-        
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            print(f"✅ Comparative analysis saved to {save_path}")
-        
+            print(f" Plot saved to {save_path}")
         plt.show()
-    
-    def _plot_comparative_latency(self, ax, algorithms, colors):
-        """Comparative latency plot"""
-        unique_nodes = sorted(self.metrics_data[algorithms[0]]['iot_nodes'].unique())
-        
-        for idx, algo in enumerate(algorithms):
-            latency_means = []
-            for nodes in unique_nodes:
-                node_data = self.metrics_data[algo][self.metrics_data[algo]['iot_nodes'] == nodes]
-                latency_means.append(node_data['latency'].mean())
-            
-            ax.plot(unique_nodes, latency_means, marker='o', linewidth=2, 
-                   label=algo, color=colors[idx % len(colors)])
-        
-        ax.set_xlabel('Number of IoT Nodes')
-        ax.set_ylabel('Latency (ms)')
-        ax.set_title('Comparative Latency Analysis')
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-    
-    def _plot_comparative_throughput(self, ax, algorithms, colors):
-        """Comparative throughput plot"""
-        unique_nodes = sorted(self.metrics_data[algorithms[0]]['iot_nodes'].unique())
-        
-        for idx, algo in enumerate(algorithms):
-            throughput_means = []
-            for nodes in unique_nodes:
-                node_data = self.metrics_data[algo][self.metrics_data[algo]['iot_nodes'] == nodes]
-                throughput_means.append(node_data['throughput'].mean())
-            
-            ax.plot(unique_nodes, throughput_means, marker='s', linewidth=2,
-                   label=algo, color=colors[idx % len(colors)])
-        
-        ax.set_xlabel('Number of IoT Nodes')
-        ax.set_ylabel('Throughput (Kbps)')
-        ax.set_title('Comparative Throughput Analysis')
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-    
-    def _plot_comparative_pdr(self, ax, algorithms, colors):
-        """Comparative PDR plot"""
-        unique_nodes = sorted(self.metrics_data[algorithms[0]]['iot_nodes'].unique())
-        
-        for idx, algo in enumerate(algorithms):
-            pdr_means = []
-            for nodes in unique_nodes:
-                node_data = self.metrics_data[algo][self.metrics_data[algo]['iot_nodes'] == nodes]
-                pdr_means.append(node_data['packet_delivery_ratio'].mean() * 100)
-            
-            ax.plot(unique_nodes, pdr_means, marker='^', linewidth=2,
-                   label=algo, color=colors[idx % len(colors)])
-        
-        ax.set_xlabel('Number of IoT Nodes')
-        ax.set_ylabel('Packet Delivery Ratio (%)')
-        ax.set_title('Comparative PDR Analysis')
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-        ax.set_ylim(50, 100)
-    
-    def _plot_comparative_accuracy(self, ax, algorithms, colors):
-        """Comparative accuracy plot"""
-        unique_nodes = sorted(self.metrics_data[algorithms[0]]['iot_nodes'].unique())
-        
-        for idx, algo in enumerate(algorithms):
-            accuracy_means = []
-            for nodes in unique_nodes:
-                node_data = self.metrics_data[algo][self.metrics_data[algo]['iot_nodes'] == nodes]
-                accuracy_means.append(node_data['detection_accuracy'].mean() * 100)
-            
-            ax.plot(unique_nodes, accuracy_means, marker='d', linewidth=2,
-                   label=algo, color=colors[idx % len(colors)])
-        
-        ax.set_xlabel('Number of IoT Nodes')
-        ax.set_ylabel('Detection Accuracy (%)')
-        ax.set_title('Comparative Accuracy Analysis')
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-        ax.set_ylim(60, 100)
+
+# --------------------------
+if __name__ == "__main__":
+    analyzer = NS3FlowAnalyzer()
+    if analyzer.load_all_csv():
+        analyzer.calculate_metrics()
+        plot_file = os.path.join(RESULTS_DIR, 'ns3_all_metrics.png')
+        analyzer.plot_metrics(save_path=plot_file)
