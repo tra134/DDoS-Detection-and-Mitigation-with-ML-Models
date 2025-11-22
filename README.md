@@ -11,26 +11,25 @@ This project implements a complete DDoS detection and mitigation pipeline that c
     Real-time Mitigation System: A closed-loop system where Python reads live network stats and instructs NS-3 to block malicious IPs instantly.
     Performance Analysis: Tools to visualize Latency, Throughput, PDR, and Accuracy across different scenarios.
 
-📂 Project Structure
+## 📂 Project Structure
 
 ```bash
 ddos-project-new/
-├── analysis/ # Scripts for performance visualization
-├── config/ # YAML configuration files
+├── analysis/             # Scripts for performance visualization
+├── config/               # YAML configuration files
 ├── data/
-│ |── raw/ # Offline simulation results
-| |── live/ # Real-time communication pipe files
-├── models/ # Saved ML models (.pkl/.joblib)
+│   ├── raw/              # Offline simulation results
+│   └── live/             # Real-time communication pipe files
+├── models/               # Saved ML models (.pkl/.joblib)
 ├── mitigation/
-│ └── mitigator.py # AI mitigation engine
-├── ml-pipeline/ # ML training scripts
+│   └── mitigator.py      # AI mitigation engine
+├── ml-pipeline/          # ML training scripts
 ├── ns3-simulations/
-│ └── src/
-│ └── ddos-simulator.cc # Main C++ logic
-├── run_experiments.sh # Automated multi-scenario runner
-├── run_visualization.py # Plot results
-└── requirements.txt # Python dependencies
-```
+│   └── src/
+│       └── ddos-simulator.cc  # Main C++ logic
+├── run_experiments.sh    # Automated multi-scenario runner
+├── run_visualization.py  # Plot results
+└── requirements.txt      # Python dependencies
 
 🚀 Quick Start
 
