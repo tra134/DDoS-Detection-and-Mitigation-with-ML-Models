@@ -18,8 +18,8 @@ ddos-project-new/
 ├── analysis/ # Scripts for performance visualization
 ├── config/ # YAML configuration files
 ├── data/
-│ └── raw/ # Offline simulation results
-├── live/ # Real-time communication pipe files
+│ |── raw/ # Offline simulation results
+| |── live/ # Real-time communication pipe files
 ├── models/ # Saved ML models (.pkl/.joblib)
 ├── mitigation/
 │ └── mitigator.py # AI mitigation engine
@@ -93,19 +93,8 @@ Watch Terminal 1 detect the attack and Terminal 2 confirm the blocked packets!
 
 Mode B: Performance Analysis Mode (Automated)
 
-Run multiple scenarios to generate charts for Latency, PDR, etc.
-Bash
 
-chmod +x run_experiments.sh
-./run_experiments.sh
 
-This script will:
-
-    Run simulations for 10, 20, 30, 40, 50 nodes.
-
-    Collect detailed logs.
-
-    Automatically generate performance charts in the results/ folder.
 
 📊 Performance Metrics
 
