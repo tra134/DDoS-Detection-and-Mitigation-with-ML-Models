@@ -38,3 +38,17 @@ __pycache__/
 # Temporary files
 *.tmp
 *.temp
+
+# LaTeX build files
+*.aux
+*.fdb_latexmk
+*.fls
+*.lof
+*.lot
+*.out
+*.synctex.gz
+*.toc
+*.log
+*.bbl
+*.blg
+
