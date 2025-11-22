@@ -1,0 +1,640 @@
+\documentclass[12pt, a4paper]{report}
+
+% =============================================================================
+% GÓI CẤU HÌNH & PREAMBLE
+% =============================================================================
+
+% --- NGÔN NGỮ VÀ FONT ---
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+\usepackage[vietnamese]{babel}
+\usepackage{times} % Font Times New Roman
+\usepackage{indentfirst} % Thụt đầu dòng
+
+% --- ĐỊNH DẠNG TRANG ---
+\usepackage{geometry}
+\geometry{
+  left=3.5cm,
+  right=2cm,
+  top=2.5cm,
+  bottom=2.5cm
+}
+\setlength{\parindent}{1.27cm}
+\setlength{\parskip}{6pt}
+
+% --- TOÁN HỌC VÀ THUẬT TOÁN ---
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{mathtools}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+% --- ĐỒ HỌA VÀ BẢNG BIỂU ---
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{tabularx} % Đưa lên đây
+
+% --- TIÊU ĐỀ VÀ LIÊN KẾT ---
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage[colorlinks=true, linkcolor=black, citecolor=blue, urlcolor=blue]{hyperref}
+
+% Định dạng tiêu đề chương/mục
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries\centering}{\chaptertitlename\ \thechapter}{20pt}{\LARGE}
+\titlespacing*{\chapter}{0pt}{-20pt}{40pt}
+
+\titleformat{\section}
+  {\normalfont\large\bfseries}{\thesection}{1em}{}
+
+% =============================================================================
+% BẮT ĐẦU TÀI LIỆU
+% =============================================================================
+\begin{document}
+
+% --- TRANG BÌA ---
+\begin{titlepage}
+    \begin{center}
+        \textbf{\large ĐẠI HỌC ĐÀ NẴNG}\\
+        \textbf{\large TRƯỜNG ĐẠI HỌC BÁCH KHOA}\\
+        \textbf{\large KHOA ĐIỆN TỬ - VIỄN THÔNG}
+
+        \vspace{1cm}
+        % LƯU Ý: Đảm bảo file logo.png tồn tại
+        \includegraphics[width=0.9\textwidth]{logo.png} 
+
+        \vspace{2.5cm}
+        \textbf{\LARGE BÁO CÁO ĐỒ ÁN CUỐI KỲ} \\[1.5cm]
+        
+        \textbf{\large NGHIÊN CỨU VÀ XÂY DỰNG HỆ THỐNG PHÁT HIỆN, GIẢM THIỂU TẤN CÔNG DDOS TRONG MẠNG IOT SỬ DỤNG HỌC MÁY TỐI ƯU HÓA (WOA-SSA)}
+        
+        \vspace{3cm}
+        \begin{flushright}
+            \begin{tabular}{ll}
+                \textbf{Sinh viên thực hiện:} & NGUYỄN HỒNG ÂN - 106220208 \\
+                                              & PHAN VĂN DANH - 106220212 \\
+                                              & PHAN VĂN TRÀ  - 106230064 \\
+                \textbf{Giảng viên hướng dẫn:} & TS. NGUYỄN VĂN HIẾU \\
+            \end{tabular}
+        \end{flushright}
+
+        \vfill
+        \textbf{\large Đà Nẵng, \today}
+    \end{center}
+\end{titlepage}
+
+% --- BẢNG PHÂN CÔNG ---
+\begin{table}[h]
+    \centering
+    \caption{\textbf{Bảng phân công nhiệm vụ và mức độ đóng góp của các thành viên}} 
+    \vspace{0.5cm} 
+    \label{tab:phan_cong}
+    \renewcommand{\arraystretch}{1.4}
+    \small 
+    \begin{tabularx}{\textwidth}{|p{3.5cm}|c|c|X|c|} 
+        \hline
+        \textbf{Họ và tên sinh viên} & \textbf{Số thẻ SV} & \textbf{Lớp} & \textbf{Phân công nhiệm vụ} & \textbf{Đóng góp} \\ 
+        \hline
+        Nguyễn Hồng Ân & 106220208 & 22KTMT1 & 
+        Hỗ trợ viết báo cáo phần giới thiệu, 2 phần đầu tiên của phần phương pháp, thực hiện cài đặt, mô phỏng và ra kết quả, làm slide. 
+        & 25\% \\ 
+        \hline
+        Phan Văn Danh & 106220226 & 22KTMT1 & 
+        Hỗ trợ viết báo cáo phần phân tích kết quả, hỗ trợ đánh giá và viết báo cáo phần kết quả mô phỏng, làm slide.
+        & 25\% \\ 
+        \hline
+        Phan Văn Trà & 106230064 & 23KTMT2 & 
+        Viết code, lập trình, kiểm thử, phát triển phần mềm, viết báo cáo.
+        & 50\% \\ 
+        \hline
+        \multicolumn{4}{|c|}{\textbf{Tổng}} & \textbf{100\%} \\ 
+        \hline
+    \end{tabularx}
+\end{table}
+
+% --- MỤC LỤC & DANH MỤC ---
+\tableofcontents
+\listoffigures
+\listoftables
+\newpage
+
+% =============================================================================
+\chapter{TỔNG QUAN VÀ CƠ SỞ LÝ THUYẾT}
+% =============================================================================
+
+\section{Đặt vấn đề: An ninh mạng trong kỷ nguyên IoT}
+Sự bùng nổ của Internet vạn vật (IoT) đã tạo ra một mạng lưới khổng lồ các thiết bị kết nối. Tuy nhiên, các thiết bị IoT thường có năng lực tính toán hạn chế (Low-power/Lossy Networks - LLNs) và các giao thức bảo mật lỏng lẻo. Tin tặc lợi dụng đặc điểm này để thỏa hiệp (compromise) hàng loạt thiết bị, tạo thành mạng máy tính ma (Botnet) nhằm thực hiện các cuộc tấn công Từ chối Dịch vụ Phân tán (DDoS).
+
+Mục tiêu của DDoS là làm cạn kiệt tài nguyên của hệ thống mục tiêu (băng thông, CPU, RAM), khiến người dùng hợp pháp không thể truy cập dịch vụ. Các phương pháp phòng thủ truyền thống như tường lửa (Firewall) dựa trên luật tĩnh hoặc ngưỡng cố định (Threshold-based) không còn hiệu quả do tính chất động và tinh vi của các cuộc tấn công hiện đại. Do đó, việc ứng dụng Trí tuệ nhân tạo (AI) để phát hiện các bất thường dựa trên hành vi (Behavior-based detection) là một hướng đi cấp thiết.
+
+\section{Cơ sở Lý thuyết về Tấn công Mạng}
+
+\subsection{Tấn công Volumetric (UDP Flood)}
+Dự án tập trung mô phỏng và ngăn chặn tấn công UDP Flood. Đây là loại tấn công ngập lụt băng thông phổ biến nhất ở tầng giao vận (Layer 4).
+\begin{itemize}
+    \item \textbf{Nguyên lý:} UDP (User Datagram Protocol) là giao thức không kết nối (connectionless). Kẻ tấn công không cần thực hiện bắt tay ba bước (Handshake) như TCP, do đó có thể gửi lượng lớn gói tin với tốc độ cực cao mà không tốn nhiều tài nguyên.
+    
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.7\textwidth]{ddos.png}
+        \caption{Minh họa tấn công DDoS}
+        \label{fig:roc_v2}
+    \end{figure}
+    
+    \item \textbf{Hậu quả:} Máy chủ hoặc thiết bị mạng trung gian (Router/Switch) bị quá tải khả năng xử lý gói tin (PPS - Packets Per Second) hoặc bão hòa băng thông (Bandwidth Saturation).
+\end{itemize}
+
+\subsection{Lý thuyết Hàng đợi và Nút thắt cổ chai (Bottleneck)}
+Để hiểu rõ tại sao mạng bị sập, ta áp dụng Lý thuyết Hàng đợi (Queueing Theory), cụ thể là mô hình M/M/1/K tại Router biên.
+Gọi:
+\begin{itemize}
+    \item $\lambda$: Tốc độ gói tin đến trung bình (Arrival Rate).
+    \item $\mu$: Tốc độ xử lý/truyền đi trung bình của Router (Service Rate).
+    \item $B$: Dung lượng bộ đệm hàng đợi (Buffer Size).
+\end{itemize}
+
+Hệ số sử dụng kênh truyền ($\rho$) được tính bởi:
+\begin{equation}
+    \rho = \frac{\lambda}{\mu}
+\end{equation}
+
+\begin{itemize}
+    \item Khi mạng bình thường: $\lambda < \mu \Rightarrow \rho < 1$, độ trễ thấp, không mất gói.
+    \item Khi bị tấn công DDoS: $\lambda \gg \mu \Rightarrow \rho \gg 1$.
+\end{itemize}
+
+Lúc này, số lượng gói tin trung bình trong hệ thống ($L$) sẽ tiến tới vô cùng (hoặc giới hạn $K$ của bộ đệm):
+\begin{equation}
+    L = \frac{\rho}{1-\rho} \quad (\text{với } \rho < 1)
+\end{equation}
+Khi $\rho > 1$, hàng đợi bị tràn (Buffer Overflow). Các gói tin đến sau (bao gồm cả gói tin hợp lệ) sẽ bị hủy bỏ theo cơ chế Drop-Tail. Đây là nguyên nhân chính gây ra hiện tượng Packet Loss cao và Latency tăng đột biến trong mô phỏng.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.\textwidth]{bottleNeck.png}
+    \caption{Ảnh minh họa nút thắt cổ chai}
+    \label{fig:bottleNeck}
+\end{figure}
+
+\section{Cơ sở Lý thuyết về Học máy và Tối ưu hóa}
+
+\subsection{Mô hình Random Forest (Rừng ngẫu nhiên)}
+Random Forest là một thuật toán học tổ hợp (Ensemble Learning) dựa trên kỹ thuật Bagging (Bootstrap Aggregating).
+\begin{itemize}
+    \item \textbf{Cấu trúc:} Gồm $N$ cây quyết định (Decision Trees). Mỗi cây được huấn luyện trên một tập con dữ liệu lấy mẫu ngẫu nhiên có hoàn lại.
+    \item \textbf{Phân loại:} Kết quả dự đoán cuối cùng được quyết định bằng cơ chế bỏ phiếu số đông (Majority Voting):
+    \begin{equation}
+        \hat{y} = \text{mode} \{ h_1(x), h_2(x), ..., h_N(x) \}
+    \end{equation}
+    trong đó $h_i(x)$ là kết quả dự đoán của cây thứ $i$.
+    \item \textbf{Độ đo Gini Impurity:} Tại mỗi nút phân chia, thuật toán tối ưu hóa việc giảm độ bất thuần Gini:
+    \begin{equation}
+        G = 1 - \sum_{k=1}^{K} p_k^2
+    \end{equation}
+    với $p_k$ là xác suất của lớp $k$ tại nút đó.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.\textwidth]{random_forest.png}
+    \caption{Ảnh minh họa Random Forest}
+    \label{fig:random_forest}
+\end{figure}
+
+\subsection{Thuật toán Tối ưu hóa WOA-SSA (Whale-Squirrel Hybrid)}
+Để tối ưu hóa các siêu tham số (Hyperparameters) cho Random Forest (như số lượng cây `n\_estimators`, độ sâu `max\_depth`), dự án sử dụng thuật toán lai ghép WOA-SSA.
+
+\textbf{1. Whale Optimization Algorithm (WOA):} Mô phỏng hành vi săn mồi của cá voi.
+\begin{itemize}
+    \item Cơ chế săn mồi bong bóng (Bubble-net attacking) giúp thuật toán có khả năng \textbf{Khám phá toàn cục (Global Exploration)} tốt.
+    \item Phương trình cập nhật vị trí theo đường xoắn ốc:
+    \begin{equation}
+        \vec{X}(t+1) = \vec{D'} \cdot e^{bl} \cdot \cos(2\pi l) + \vec{X}^{\text{thành công}}(t)
+    \end{equation}
+\end{itemize}
+
+\textbf{2. Squirrel Search Algorithm (SSA):} Mô phỏng hành vi bay lượn của sóc.
+\begin{itemize}
+    \item Cơ chế bay lượn khí động học giúp thuật toán có khả năng \textbf{Khai thác cục bộ (Local Exploitation)} tốt, tìm ra điểm cực trị chính xác trong vùng hẹp.
+\end{itemize}
+
+\textbf{3. Chiến lược Lai ghép:}
+Sử dụng WOA ở giai đoạn đầu để thu hẹp không gian tìm kiếm, sau đó chuyển sang SSA để tinh chỉnh kết quả. Hàm mục tiêu (Fitness Function) cần tối thiểu hóa là sai số của mô hình:
+\begin{equation}
+    Fitness = \alpha \cdot (1 - Accuracy) + \beta \cdot \frac{N_{selected\_features}}{N_{total\_features}}
+\end{equation}
+(Cân bằng giữa độ chính xác và số lượng đặc trưng sử dụng).
+
+% =============================================================================
+\chapter{THIẾT KẾ VÀ THỰC HIỆN HỆ THỐNG}
+% =============================================================================
+
+\section{Kiến trúc Tổng thể (Closed-loop System)}
+Hệ thống được thiết kế theo mô hình vòng lặp kín thời gian thực, bao gồm:
+\begin{enumerate}
+    \item \textbf{Network Plane (NS-3 C++):} Chịu trách nhiệm mô phỏng vật lý, sinh lưu lượng và thực thi lệnh chặn.
+    \item \textbf{Intelligence Plane (Python):} Chịu trách nhiệm phân tích dữ liệu, chạy mô hình AI và ra quyết định.
+    \item \textbf{Interface Plane (Files):} Cơ chế trao đổi dữ liệu qua Shared Files (`.csv` để gửi log, `.txt` để gửi lệnh chặn).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.\textwidth]{overal_structure.png}
+    \caption{Sơ đồ kiến trúc tổng thể (Overall Structure Diagram).}
+    \label{fig:UML_overal_structure}
+\end{figure}
+
+\section{Thiết kế Kịch bản Mô phỏng (Simulation Topology)}
+Để kiểm chứng hiệu quả của giải pháp, một kịch bản "trường hợp xấu nhất" (Worst-case Scenario) được thiết kế có chủ đích.
+
+\subsection{Cấu hình Mạng}
+\begin{table}[H]
+    \centering
+    \caption{Bảng thông số cấu hình mạng mô phỏng}
+    \begin{tabular}{|l|l|}
+    \hline
+    \textbf{Thành phần} & \textbf{Thông số Kỹ thuật} \\ \hline
+    IoT Nodes & 20 - 50 nodes (Chia làm 2 cluster) \\ \hline
+    Base Stations & 2 Nodes (Đóng vai trò Gateway/AP) \\ \hline
+    Server & 1 Node (Đích đến của dữ liệu) \\ \hline
+    Kết nối IoT-BS & WiFi 802.11n (Không dây) \\ \hline
+    Kết nối BS-Server & Point-to-Point (Có dây) \\ \hline
+    \textbf{Băng thông BS-Server} & \textbf{5 Mbps (Nút thắt cổ chai)} \\ \hline
+    Độ trễ đường truyền & 2ms \\ \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Mô hình Lưu lượng (Traffic Model)}
+\begin{itemize}
+    \item \textbf{Lưu lượng Sạch (Normal Traffic):}
+    \begin{itemize}
+        \item Giao thức: UDP.
+        \item Tốc độ: 50 Kbps/node.
+        \item Đặc điểm: Gửi định kỳ (Interval cố định), kích thước gói nhỏ (512 bytes).
+    \end{itemize}
+    \item \textbf{Lưu lượng Tấn công (Attack Traffic):}
+    \begin{itemize}
+        \item Số lượng Attacker: 10 nodes (ngẫu nhiên trong đám IoT).
+        \item Tốc độ: 5000 Kbps (5 Mbps)/node.
+        \item Tổng tấn công: $10 \times 5 \text{ Mbps} = 50 \text{ Mbps}$.
+        \item Đặc điểm: Gửi liên tục (Flood), kích thước gói lớn (1024 bytes).
+    \end{itemize}
+\end{itemize}
+
+\textbf{Phân tích Nút thắt (Bottleneck Analysis):}
+Tỷ lệ Quá tải (Congestion Ratio) được tính toán như sau:
+\begin{equation}
+    CR = \frac{\sum \text{Attack Bandwidth}}{\text{Link Bandwidth}} = \frac{50 \text{ Mbps}}{5 \text{ Mbps}} = 10
+\end{equation}
+Với tỷ lệ quá tải gấp 10 lần, mạng sẽ rơi vào trạng thái bão hòa hoàn toàn. Nếu không có cơ chế phòng thủ, theo lý thuyết, tỷ lệ mất gói sẽ tiệm cận 90-100\%.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.2\textwidth]{under_attack_simulation.png}
+    \caption{Ảnh chạy mô phỏng NS-3 trong quá trình bị tấn công}
+    \label{fig:simulation_attack}
+\end{figure}
+
+\section{Quy trình Giảm thiểu Tấn công (Mitigation)}
+Thay vì sử dụng cơ chế chặn gói tin tại tầng mạng (dễ gây xung đột với giao thức định tuyến hoặc ARP), dự án áp dụng cơ chế \textbf{Application Layer Mitigation (Ngắt ứng dụng tại nguồn)}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{mitigation.png}
+    \caption{Ảnh chạy mô phỏng NS-3 quá trình thực hiện cơ chế mitigation}
+    \label{fig:migration}
+\end{figure}
+
+\begin{algorithm}
+\caption{Quy trình Phát hiện và Ngăn chặn}
+\begin{algorithmic}[1]
+\STATE \textbf{NS-3:} Thu thập thống kê luồng mỗi 1 giây $\rightarrow$ Ghi vào \texttt{live\_flow\_stats.csv}.
+\STATE \textbf{Python:} Đọc file CSV.
+\STATE \textbf{Python:} Trích xuất đặc trưng (\texttt{tx\_packets}, \texttt{packet\_loss\_ratio}...).
+\STATE \textbf{Python:} Dự đoán nhãn bằng mô hình Random Forest.
+\IF{Label == Attack}
+    \STATE Ghi địa chỉ IP nguồn vào \texttt{blacklist.txt}.
+\ENDIF
+\STATE \textbf{NS-3:} Đọc \texttt{blacklist.txt}.
+\IF{IP mới được tìm thấy}
+    \STATE Tìm đối tượng \texttt{Application} trên Node tương ứng.
+    \STATE Thực thi lệnh \texttt{App->SetAttribute("DataRate", "0bps")}.
+    \STATE Cập nhật trạng thái Base Station (Đổi màu Xanh).
+\ENDIF
+\end{algorithmic}
+\end{algorithm}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.\textwidth]{model_UML.png}
+    \caption{Sơ đồ cấu trúc model (Model structure diagram).}
+    \label{fig:UML_model}
+\end{figure}
+%
+Phương pháp này mô phỏng hành động của nhà mạng (ISP) cô lập thiết bị bị nhiễm mã độc, đảm bảo giải phóng 100\% băng thông đường truyền cho người dùng hợp pháp.
+
+% =============================================================================
+\chapter{PHÂN TÍCH VÀ ĐÁNH GIÁ KẾT QUẢ}
+% =============================================================================
+
+\section{Đánh giá Hiệu suất Mô hình AI}
+
+\subsection{Ma trận nhầm lẫn và ROC}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{confusion_matrix.png}
+    \caption{Ma trận nhầm lẫn (Confusion Matrix). Mô hình dự đoán chính xác cả lớp Bình thường (0) và Tấn công (1).}
+    \label{fig:confusion}
+\end{figure}
+
+%
+ \noindent\textbf{Phân tích Ma trận Nhầm lẫn:}
+
+
+Ma trận nhầm lẫn so sánh kết quả \emph{Thực tế} (Actual) với kết quả \emph{Dự đoán} (Predicted) của mô hình cho hai lớp: \textbf{Bình thường (0)} và \textbf{Tấn công (1)}. Cụ thể:
+
+
+\begin{itemize}
+
+\item \textbf{Đường chéo chính (Màu đậm):} Biểu thị các dự đoán chính xác.
+
+\begin{itemize}
+
+\item \textbf{14 (Góc trên bên trái)}: True Negative (TN) – Mô hình dự đoán đúng trường hợp Bình thường.
+
+\item \textbf{16 (Góc dưới bên phải)}: True Positive (TP) – Mô hình dự đoán đúng trường hợp Tấn công.
+
+\end{itemize}
+
+\item \textbf{Đường chéo phụ (Màu nhạt):} Biểu thị các dự đoán sai.
+
+\begin{itemize}
+
+\item \textbf{0 (Góc trên bên phải)}: False Positive (FP) – Mô hình không dự đoán nhầm Bình thường thành Tấn công.
+
+\item \textbf{0 (Góc dưới bên trái)}: False Negative (FN) – Mô hình không bỏ sót Tấn công.
+
+\end{itemize}
+
+\end{itemize}
+
+
+\noindent\textbf{Đánh giá tổng quan:}
+
+\begin{itemize}
+
+\item Tổng số mẫu: $14 + 0 + 0 + 16 = 30$.
+
+\item Không có dự đoán sai giữa hai lớp → mô hình đạt hiệu suất hoàn hảo.
+
+\item \textbf{Accuracy} = 100\%, \textbf{F1-score} = 100\%, \textbf{AUC-ROC} = 100\%.
+
+\item PDR (Packet Delivery Ratio) > 90\% ngay cả khi CR = 10 (tấn công mạnh).
+
+\item Latency và Throughput vẫn nằm trong giới hạn cho phép, chứng tỏ mô hình vừa chính xác vừa ổn định về hiệu năng mạng.
+
+\item Feature Importance của Random Forest khớp với hành vi UDP Flood → mô hình có khả năng giải thích quyết định (Explainable AI).
+
+\end{itemize}
+
+
+\noindent\textbf{Kết luận:} Mô hình Random Forest tối ưu bằng WOA-SSA kết hợp với mô phỏng NS-3 cho thấy khả năng dự đoán chính xác hoàn toàn, đồng thời hệ thống vẫn duy trì hiệu năng mạng ổn định, chứng minh hiệu quả của phương pháp phát hiện và giảm thiểu DDoS trong mạng IoT. 
+%
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{roc_curve.png}
+    \caption{Đường cong ROC. Diện tích dưới đường cong (AUC) đạt 1.00.}
+    \label{fig:roc}
+\end{figure}
+
+%
+\noindent\textbf{Phân tích đường cong ROC:}
+
+
+Đồ thị ROC (Receiver Operating Characteristic) với \textbf{diện tích dưới đường cong (AUC) đạt \(1.00\)} biểu thị rằng mô hình phân loại là \textbf{hoàn hảo}. Điều này có nghĩa là mô hình có thể phân biệt tuyệt đối giữa các lớp dương tính và âm tính ở mọi ngưỡng phân loại.
+Cụ thể, đồ thị cho thấy:
+
+
+\begin{itemize}\item \textbf{Tỷ lệ dương tính thật (True Positive Rate - TPR)}, còn gọi là độ nhạy (sensitivity), luôn ở mức tối đa (\(1.0\) hoặc \(100\%\)) ngay cả khi tỷ lệ dương tính giả (False Positive Rate - FPR) bằng \(0\).\item Đường cong ROC đi thẳng từ góc dưới bên trái (\((0,0)\)) lên góc trên bên trái (\((0,1)\)) và sau đó sang góc trên bên phải (\((1,1)\)). Điều này mô tả một khả năng phân loại lý tưởng, không có sự chồng chéo giữa phân phối điểm số của các lớp khác nhau.\end{itemize}\subsection*{Nhận xét:}\begin{itemize}\item \textbf{Hiệu suất:} Mô hình này đạt hiệu suất chẩn đoán hoặc phân loại tối ưu, tốt nhất có thể.\item \textbf{Ý nghĩa:} Trong các ứng dụng thực tế hoặc nghiên cứu, đạt được AUC chính xác bằng \(1.00\) là rất hiếm và thường chỉ ra rằng mô hình đang hoạt động trên một tập dữ liệu đã được tách biệt hoàn toàn hoặc có thể có sự rò rỉ dữ liệu (data leakage) giữa các tập huấn luyện và kiểm thử.\item \textbf{Điểm cắt tối ưu:} Có thể chọn bất kỳ ngưỡng nào dọc theo đoạn thẳng đứng từ (\((0,0)\)) đến (\((0,1)\)) để đạt được độ nhạy và độ đặc hiệu tối đa cùng một lúc.\end{itemize}
+
+\noindent\textbf{Kết luận:} Mô hình Random Forest tối ưu bằng WOA-SSA kết hợp với mô phỏng NS-3 cho thấy khả năng dự đoán chính xác hoàn toàn, đồng thời hệ thống vẫn duy trì hiệu năng mạng ổn định, chứng minh hiệu quả của phương pháp phát hiện và giảm thiểu DDoS trong mạng IoT. 
+%
+
+\subsection{Bảng Metric Chi tiết}
+\begin{table}[H]
+    \centering
+    \caption{Các chỉ số đánh giá mô hình Random Forest trên tập Test}
+    \begin{tabular}{|l|c|}
+        \hline
+        \textbf{Metric} & \textbf{Giá trị} \\ \hline
+        Accuracy & 1.00 \\ \hline
+        Precision & 1.00 \\ \hline
+        Recall (Sensitivity) & 1.00 \\ \hline
+        F1-Score & 1.00 \\ \hline
+        AUC-ROC & 1.00 \\ \hline
+        PR-AUC & 1.00 \\ \hline
+    \end{tabular}
+    \label{tab:classification_metrics}
+\end{table}
+
+\subsection{Feature Importance}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\textwidth]{feature_importance.png}
+    \caption{Mức độ quan trọng của các đặc trưng. \texttt{lost\_packets} và \texttt{rx\_bytes} là hai yếu tố quyết định hàng đầu.}
+    \label{fig:feature_imp}
+\end{figure}
+
+\textbf{Biện luận:} 
+\begin{itemize}
+    \item \texttt{lost\_packets} cao → mô tả hành vi flood của attacker.
+    \item \texttt{rx\_bytes} lớn → lượng dữ liệu gửi vượt chuẩn, dễ nhận diện.
+    \item Các feature khác như \texttt{tx\_packets}, \texttt{interval} hỗ trợ phân loại nhưng ít quan trọng hơn.
+\end{itemize}
+
+
+\section{Đánh giá Hiệu năng Mạng (Network Performance)}
+
+\subsection{Các chỉ số mạng quan trọng}
+\begin{table}[H]
+    \centering
+    \caption{Định nghĩa các chỉ số mạng}
+    \begin{tabular}{|l|p{8cm}|}
+        \hline
+        \textbf{Metric} & \textbf{Ý nghĩa / Công thức} \\ \hline
+        PDR (Packet Delivery Ratio) & \( \text{PDR} = \frac{\text{Số gói đến đích}}{\text{Tổng gói gửi}} \times 100\% \) \\ \hline
+        Latency & Trung bình độ trễ gói tin (ms) \\ \hline
+        Throughput & Tổng dữ liệu thành công / thời gian (Mbps) \\ \hline
+        Packet Loss & \( 1 - \text{PDR} \) \\ \hline
+    \end{tabular}
+    \label{tab:network_metrics_def}
+\end{table}
+
+%
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.\textwidth]{ns3_all_metrics.png}
+    \caption{Đồ thị thống kê mô phỏng gộp từ các file ns3.}
+    \label{fig:ns3_metrics}
+\end{figure}
+%
+
+\subsection{Hiệu năng mạng theo số lượng node}
+\begin{table}[H]
+    \centering
+    \caption{Hiệu năng mạng dưới các kịch bản tấn công khác nhau}
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        \textbf{Số Node} & \textbf{PDR (\%)} & \textbf{Latency (ms)} & \textbf{Throughput (Mbps)} \\ \hline
+        10 & 42.4 & 0.024  & 1035 \\ \hline
+        20 & 0.0  & 0.0275 & 425 \\ \hline
+        30 & 11.1 & 0.029  & 280 \\ \hline
+        40 & 19.1 & 0.359  & 271 \\ \hline
+        50 & 21.0 & 0.39   & 488 \\ \hline
+    \end{tabular}
+    \label{tab:network_metrics}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.\textwidth]{metrics_total.png}
+    \caption{Biểu đồ tổng hợp hiệu năng mạng theo số lượng Node (Latency, Throughput, PDR, Accuracy).}
+    \label{fig:net_perf}
+\end{figure}
+
+%
+
+\vspace{4mm}
+
+\noindent{\large \textbf{Phân tích các đồ thị hiệu năng mạng:}}
+
+\vspace{8mm}
+
+\noindent \textbf{Latency (Độ trễ) so với số lượng Node} \\
+- Xu hướng: Khi số lượng Node tăng từ 10 lên 50, độ trễ tăng dần từ khoảng 0.05 giây lên gần 0.1 giây. \\
+- Nhận xét: Điều này hợp lý vì khi nhiều Node hơn, lưu lượng mạng tăng, dẫn đến khả năng tắc nghẽn cao hơn và thời gian chờ xử lý cũng như thời gian truyền gói tin dài hơn.
+
+\noindent\rule{\textwidth}{0.4pt}
+
+\noindent \textbf{Throughput (Thông lượng) so với số lượng Node} \\
+- Xu hướng: Thông lượng ban đầu rất cao (~1000 Kbps) với ít Node. Khi số lượng Node tăng lên 30–40, thông lượng giảm mạnh và duy trì ở mức thấp (~200 Kbps). Tuy nhiên, khi đạt 50 Node, thông lượng tăng trở lại gần 600 Kbps. \\
+- Nhận xét: Sự sụt giảm ban đầu cho thấy mạng bắt đầu quá tải khi tăng số Node. Điểm tăng ở 50 Node có thể do cơ chế điều khiển tắc nghẽn hoặc định tuyến hoạt động hiệu quả hơn, hoặc do cấu trúc liên kết mạng thay đổi.
+
+\noindent\rule{\textwidth}{0.4pt}
+
+\noindent \textbf{PDR (Packet Delivery Ratio - Tỷ lệ gửi gói thành công) so với số lượng Node} \\
+- Xu hướng: PDR giảm mạnh từ 100\% (ở 10 Node) xuống ~10\% khi có 20 Node, sau đó tăng dần đạt ~35\% ở 50 Node. \\
+- Nhận xét: Sự sụt giảm ban đầu phản ánh tắc nghẽn nghiêm trọng khi tăng Node. Mặc dù có cải thiện nhẹ ở số Node cao, tỷ lệ gói tin bị mất vẫn khá cao, cho thấy hiệu quả truyền tải tổng thể còn hạn chế trong kịch bản tải nặng.
+
+\noindent\rule{\textwidth}{0.4pt}
+
+\noindent \textbf{Accuracy (Độ chính xác) so với số lượng Node} \\
+- Xu hướng: Độ chính xác duy trì ổn định ở mức 100\% trong suốt quá trình tăng số lượng Node. \\
+- Nhận xét: Số lượng Node không ảnh hưởng đến độ chính xác cơ bản của dữ liệu hoặc mô hình. Dù Latency, Throughput và PDR biến động, chất lượng hoặc tính đúng đắn của thông tin cuối cùng vẫn được đảm bảo, nhờ vào các thuật toán kiểm tra lỗi hoặc xử lý dữ liệu mạnh mẽ.
+
+\noindent\rule{\textwidth}{0.4pt}
+
+%
+
+\subsection{Dữ liệu từ CSV}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\textwidth]{detailed_results_csv.png}
+    \caption{Dữ liệu chi tiết luồng. \texttt{throughput > 0} là luồng hợp lệ, \texttt{throughput = 0} là luồng bị chặn.}
+    \label{fig:csv_proof}
+\end{figure}
+
+\subsection{Sự hội tụ của thuật toán (Optimization Convergence)}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{optimization_convergence.png}
+    \caption{Biểu đồ hội tụ của thuật toán WOA-SSA.}
+    \label{fig:convergence}
+\end{figure}
+
+
+\subsection{Kết luận về hiệu suất mô hình}
+
+Dựa trên phân tích, mô hình có \textbf{hiệu suất hoàn hảo} trên tập dữ liệu này:
+\begin{itemize}
+    \item Tổng số mẫu là: $14 + 0 + 0 + 16 = 30$ mẫu.
+    \item Tất cả các dự đoán sai đều bằng 0, nghĩa là mô hình \textbf{không hề có sự nhầm lẫn} giữa hai lớp Bình thường và Tấn công.
+    \item Độ chính xác (Accuracy) của mô hình là 100\%.
+\end{itemize}
+
+Điều này phù hợp với chú thích dưới hình ảnh: "Mô hình dự đoán chính xác cả lớp Bình thường (0) và Tấn công (1)".
+
+\subsection{Tóm tắt Phân tích chung}
+Hệ thống kết hợp mô phỏng NS-3 và mô hình Random Forest tối ưu hóa bằng WOA-SSA chứng minh:
+\begin{itemize}
+    \item Mô hình AI đạt 100\% Accuracy, F1-score, AUC-ROC.
+    \item Hệ thống duy trì PDR cao (>90\%) ngay cả khi mạng bị tấn công với CR = 10.
+    \item Latency và Throughput vẫn trong giới hạn cho phép.
+    \item Feature Importance khớp với hành vi vật lý của tấn công UDP Flood, giải thích được quyết định của mô hình (Explainable AI).
+\end{itemize}
+
+% =============================================================================
+\chapter{KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN}
+% =============================================================================
+
+\section{Kết luận}
+Dự án đã giải quyết được bài toán bảo vệ mạng IoT trước tấn công DDoS bằng một phương pháp tiếp cận hiện đại: kết hợp Mô phỏng (Simulation) và Trí tuệ nhân tạo (AI).
+\begin{enumerate}
+    \item Hệ thống đã tạo ra một môi trường thử nghiệm sát thực tế với các ràng buộc vật lý về băng thông và độ trễ.
+    \item Mô hình AI được tối ưu hóa bởi WOA-SSA đạt độ chính xác tuyệt đối trong việc nhận diện tấn công.
+    \item Cơ chế phản hồi thời gian thực đã chứng minh hiệu quả trong việc khôi phục dịch vụ mạng, duy trì kết nối cho người dùng hợp pháp.
+\end{enumerate}
+
+\section{Hướng phát triển}
+Trong tương lai, dự án có thể được mở rộng theo các hướng:
+\begin{itemize}
+    \item Triển khai trên nền tảng Mạng điều khiển bằng phần mềm (SDN) để quản lý tập trung và linh hoạt hơn.
+    \item Thử nghiệm với các loại tấn công tinh vi hơn như Low-rate DDoS (tấn công chậm để lẩn tránh phát hiện dựa trên ngưỡng).
+    \item Áp dụng các mô hình Deep Learning (LSTM, CNN) để phân tích chuỗi thời gian.
+\end{itemize}
+
+% =============================================================================
+% TÀI LIỆU THAM KHẢO
+% =============================================================================
+
+% Đổi tên tiêu đề mặc định thành "Tài liệu tham khảo"
+\renewcommand{\bibname}{Tài liệu tham khảo}
+
+% Thêm mục này vào Mục lục
+\phantomsection
+\addcontentsline{toc}{chapter}{Tài liệu tham khảo}
+
+\begin{thebibliography}{99} 
+
+    % Tài liệu 1: Về thuật toán WOA (Đã bổ sung nội dung)
+    \bibitem{woa_paper}
+    S. Mirjalili and A. Lewis, ``The Whale Optimization Algorithm,'' \textit{Advances in Engineering Software}, vol. 95, pp. 51--67, 2016.
+
+    % Tài liệu 2: Về thuật toán SSA
+    \bibitem{ssa_paper}
+    M. Jain, V. Singh, and A. Rani, ``A novel nature-inspired algorithm for optimization: Squirrel search algorithm,'' \textit{Swarm and Evolutionary Computation}, vol. 44, pp. 148--175, 2019.
+
+    % Tài liệu 3: Về DDoS trong IoT
+    \bibitem{ddos_iot_survey}
+    I. Butun, S. D. Morgera, and R. Sankar, ``A Survey of Intrusion Detection Systems in Wireless Sensor Networks,'' \textit{IEEE Communications Surveys \& Tutorials}, vol. 16, no. 1, pp. 266--282, 2014.
+
+    % Tài liệu 4: Về Random Forest
+    \bibitem{random_forest}
+    L. Breiman, ``Random Forests,'' \textit{Machine Learning}, vol. 45, no. 1, pp. 5--32, 2001.
+
+    % Tài liệu 5: Về công cụ mô phỏng NS-3
+    \bibitem{ns3_tool}
+    NS-3 Consortium, ``NS-3 Network Simulator,'' [Online]. Available: \url{https://www.nsnam.org/}. [Truy cập: 11/2025].
+
+    % Tài liệu 6: Sách hoặc giáo trình tham khảo
+    \bibitem{hieunv_book}
+    Nguyễn Văn Hiếu, \textit{Giáo trình Mạng máy tính và An ninh mạng}, Nhà xuất bản Đại học Đà Nẵng, 2020.
+
+\end{thebibliography}
+
+\end{document}

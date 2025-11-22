@@ -1,0 +1,19 @@
+\babel@toc {vietnamese}{}\relax 
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {1.1}{\ignorespaces Minh họa tấn công DDoS\relax }}{7}{figure.caption.5}%
+\contentsline {figure}{\numberline {1.2}{\ignorespaces Ảnh minh họa nút thắt cổ chai\relax }}{8}{figure.caption.6}%
+\contentsline {figure}{\numberline {1.3}{\ignorespaces Ảnh minh họa Random Forest\relax }}{9}{figure.caption.7}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {2.1}{\ignorespaces Sơ đồ kiến trúc tổng thể (Overall Structure Diagram).\relax }}{10}{figure.caption.8}%
+\contentsline {figure}{\numberline {2.2}{\ignorespaces Ảnh chạy mô phỏng NS-3 trong quá trình bị tấn công\relax }}{12}{figure.caption.10}%
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Ảnh chạy mô phỏng NS-3 quá trình thực hiện cơ chế mitigation\relax }}{13}{figure.caption.11}%
+\contentsline {figure}{\numberline {2.4}{\ignorespaces Sơ đồ cấu trúc model (Model structure diagram).\relax }}{14}{figure.caption.12}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Ma trận nhầm lẫn (Confusion Matrix). Mô hình dự đoán chính xác cả lớp Bình thường (0) và Tấn công (1).\relax }}{15}{figure.caption.13}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Đường cong ROC. Diện tích dưới đường cong (AUC) đạt 1.00.\relax }}{16}{figure.caption.14}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Mức độ quan trọng của các đặc trưng. \texttt {lost\_packets} và \texttt {rx\_bytes} là hai yếu tố quyết định hàng đầu.\relax }}{18}{figure.caption.16}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces Đồ thị thống kê mô phỏng gộp từ các file ns3.\relax }}{19}{figure.caption.18}%
+\contentsline {figure}{\numberline {3.5}{\ignorespaces Biểu đồ tổng hợp hiệu năng mạng theo số lượng Node (Latency, Throughput, PDR, Accuracy).\relax }}{19}{figure.caption.20}%
+\contentsline {figure}{\numberline {3.6}{\ignorespaces Dữ liệu chi tiết luồng. \texttt {throughput > 0} là luồng hợp lệ, \texttt {throughput = 0} là luồng bị chặn.\relax }}{21}{figure.caption.21}%
+\contentsline {figure}{\numberline {3.7}{\ignorespaces Biểu đồ hội tụ của thuật toán WOA-SSA.\relax }}{21}{figure.caption.22}%
+\addvspace {10\p@ }
