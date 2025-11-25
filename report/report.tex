@@ -300,7 +300,62 @@ Với tỷ lệ quá tải gấp 10 lần, mạng sẽ rơi vào trạng thái b
 \end{figure}
 
 \section{Quy trình Giảm thiểu Tấn công (Mitigation)}
-Thay vì sử dụng cơ chế chặn gói tin tại tầng mạng (dễ gây xung đột với giao thức định tuyến hoặc ARP), dự án áp dụng cơ chế \textbf{Application Layer Mitigation (Ngắt ứng dụng tại nguồn)}.
+
+%
+\section{Phân tích Cơ chế Mitigation dựa trên Machine Learning}
+
+Hệ thống hoạt động theo cơ chế \textbf{Out-of-Band Mitigation} (Giảm thiểu tấn công ngoài luồng). Hệ thống đóng vai trò là bộ não trung tâm, không trực tiếp xử lý gói tin mà điều phối việc ngăn chặn thông qua cơ chế giao tiếp tệp tin với môi trường mô phỏng NS-3.
+
+\noindent\textbf{Luồng hoạt động tổng quan}
+Quy trình xử lý tạo thành một vòng lặp khép kín:
+\[ \text{NS-3 (Ghi Log)} \rightarrow \text{Python (Đọc \& Phân tích)} \rightarrow \text{Python (Cập nhật Blacklist)} \rightarrow \text{NS-3 (Chặn IP)} \]
+
+\noindent\textbf{Phân tích chi tiết từng giai đoạn}
+
+\subsubsection{Giai đoạn 1: Giám sát thời gian thực (Monitoring)}
+Hàm \texttt{watch()} thực hiện cơ chế giám sát tệp log \texttt{live\_flow\_stats.csv} tương tự như lệnh \texttt{tail -f} trong Linux:
+\begin{itemize}
+    \item \textbf{Cơ chế đọc tăng cường (Incremental Reading):} Sử dụng phương thức \texttt{f.seek()} để chỉ đọc phần dữ liệu mới được sinh ra, giúp tối ưu hóa hiệu năng I/O và giảm độ trễ xử lý.
+    \item \textbf{Tự động đồng bộ:} Hệ thống có khả năng phát hiện khi tệp log bị ghi đè (reset) bởi NS-3 thông qua việc so sánh kích thước tệp, từ đó tự động khởi động lại con trỏ đọc.
+\end{itemize}
+
+\subsubsection{Giai đoạn 2: Phát hiện tấn công (Detection)}
+Hàm \texttt{process\_new\_flows()} đảm nhận vai trò xử lý thông minh:
+\begin{itemize}
+    \item \textbf{Tiền xử lý:} Dữ liệu luồng (flow) được chuẩn hóa và điền khuyết (fill missing values) để đảm bảo tính nhất quán.
+    \item \textbf{Scaling (Chuẩn hóa):} Sử dụng \texttt{scaler} đã được huấn luyện trước để đưa các đặc trưng (features) về cùng một miền giá trị, đảm bảo độ chính xác cho mô hình học máy.
+    \item \textbf{Dự đoán:} Mô hình đưa ra nhãn dự đoán cho từng luồng: \texttt{1} (Tấn công) hoặc \texttt{0} (Bình thường).
+\end{itemize}
+
+\subsubsection{Giai đoạn 3: Cơ chế ngăn chặn (Mitigation Action)}
+Khi phát hiện luồng tấn công, hệ thống thực hiện quy trình sau:
+\begin{enumerate}
+    \item \textbf{Lọc IP:} Trích xuất địa chỉ IP nguồn từ các mẫu có nhãn dự đoán là 1.
+    \item \textbf{Khử trùng lặp (De-duplication):} Sử dụng cấu trúc dữ liệu \texttt{Set} (\texttt{self.blocked\_ips}) để lưu trữ danh sách IP đã chặn trong bộ nhớ đệm, ngăn chặn việc ghi dư thừa vào ổ cứng.
+    \item \textbf{Cập nhật Blacklist:} Ghi địa chỉ IP của kẻ tấn công vào tệp \texttt{blacklist.txt}. Môi trường NS-3 sẽ định kỳ đọc tệp này và thực hiện hành động \textbf{DROP} gói tin từ các nguồn tương ứng.
+\end{enumerate}
+
+\noindent\textbf{Đánh giá hiệu năng và hạn chế}
+
+Bảng dưới đây tóm tắt các đặc điểm kỹ thuật của cơ chế mitigation được đề xuất:
+
+\begin{table}[H]
+\centering
+\caption{Đánh giá cơ chế Mitigation}
+\label{tab:mitigation_eval}
+\begin{tabular}{@{}lp{5cm}p{6cm}@{}}
+\toprule
+\textbf{Đặc điểm} & \textbf{Đánh giá} & \textbf{Chi tiết} \\ \midrule
+Tính tự động & Tốt & Hệ thống tự động phát hiện và cập nhật danh sách chặn mà không cần can thiệp thủ công. \\ \midrule
+Hiệu năng I/O & Khá & Sử dụng kỹ thuật đọc file theo con trỏ và caching IP giúp giảm tải cho hệ thống lưu trữ. \\ \midrule
+Độ trễ (Latency) & Trung bình & Đây là cơ chế phản ứng (Reactive). Có độ trễ nhất định từ lúc gói tin đến, ghi log, phân tích đến khi chặn thành công. \\ \midrule
+Độ chính xác & Phụ thuộc Model & Hiệu quả ngăn chặn phụ thuộc hoàn toàn vào chất lượng của model \texttt{.pkl}. Nguy cơ chặn nhầm (False Positive) nếu model bị overfitting. \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Kết luận}
+Đoạn mã nguồn đã hiện thực hóa thành công một \textbf{Blacklist-based Firewall Controller} sử dụng Machine Learning. Tuy tồn tại độ trễ do xử lý Out-of-Band, nhưng kiến trúc này tách biệt được logic phân tích phức tạp (Python) khỏi luồng chuyển tiếp gói tin tốc độ cao (NS-3/C++), giúp hệ thống dễ dàng mở rộng và bảo trì.
+%
 
 \begin{figure}[H]
     \centering
@@ -425,22 +480,7 @@ Cụ thể, đồ thị cho thấy:
 \noindent\textbf{Kết luận:} Mô hình Random Forest tối ưu bằng WOA-SSA kết hợp với mô phỏng NS-3 cho thấy khả năng dự đoán chính xác hoàn toàn, đồng thời hệ thống vẫn duy trì hiệu năng mạng ổn định, chứng minh hiệu quả của phương pháp phát hiện và giảm thiểu DDoS trong mạng IoT. 
 %
 
-\subsection{Bảng Metric Chi tiết}
-\begin{table}[H]
-    \centering
-    \caption{Các chỉ số đánh giá mô hình Random Forest trên tập Test}
-    \begin{tabular}{|l|c|}
-        \hline
-        \textbf{Metric} & \textbf{Giá trị} \\ \hline
-        Accuracy & 1.00 \\ \hline
-        Precision & 1.00 \\ \hline
-        Recall (Sensitivity) & 1.00 \\ \hline
-        F1-Score & 1.00 \\ \hline
-        AUC-ROC & 1.00 \\ \hline
-        PR-AUC & 1.00 \\ \hline
-    \end{tabular}
-    \label{tab:classification_metrics}
-\end{table}
+
 
 \subsection{Feature Importance}
 \begin{figure}[H]
@@ -557,6 +597,35 @@ Cụ thể, đồ thị cho thấy:
     \label{fig:convergence}
 \end{figure}
 
+%
+\noindent\textbf{Phân tích WOA-SSA optimization convergence:}
+
+
+Đồ thị so sánh hiệu suất hội tụ của thuật toán tối ưu hóa lai \textbf{WOA-SSA} (Whale Optimization Algorithm - Salp Swarm Algorithm) với các thuật toán cơ sở là \textbf{WOA} và \textbf{SSA}. Trục hoành biểu thị số lần lặp (Iteration), và trục tung biểu thị Giá trị thích nghi (Fitness Value).
+
+
+
+\noindent\textbf{Phân tích đường cong hội tụ}
+
+\begin{itemize}
+    \item \textbf{Giá trị thích nghi (Fitness Value):} Đây là đại lượng cần được tối thiểu hóa trong bài toán này. Giá trị càng thấp thì hiệu suất tối ưu càng tốt.
+    \item \textbf{Thuật toán SSA (đường màu cam):} Thuật toán SSA cho thấy khả năng hội tụ vượt trội so với WOA.
+    \begin{itemize}
+        \item SSA bắt đầu với giá trị thích nghi thấp hơn đáng kể so với WOA (khoảng 0.177 so với 0.185).
+        \item SSA tiếp tục giảm giá trị thích nghi qua các lần lặp và đạt đến giá trị tối ưu thấp nhất (khoảng 0.159) sau khoảng 35 lần lặp.
+    \end{itemize}
+    \item \textbf{Thuật toán WOA (đường màu xanh dương):} Thuật toán WOA có vẻ gặp phải tình trạng \textbf{hội tụ sớm} (premature convergence).
+    \begin{itemize}
+        \item Giá trị thích nghi giảm nhanh trong vài lần lặp đầu tiên nhưng sau đó bị mắc kẹt ở một cực tiểu cục bộ (local minimum) với giá trị khoảng 0.172 từ lần lặp thứ 5 trở đi.
+        \item WOA không thể tìm ra giải pháp tốt hơn dù tiếp tục chạy đến 40 lần lặp.
+    \end{itemize}
+\end{itemize}
+
+
+\noindent\textbf{Kết luận:} 
+Đồ thị cho thấy thuật toán SSA hoạt động hiệu quả hơn WOA trong bài toán cụ thể này. SSA có khả năng tìm kiếm tốt hơn (\textit{exploration ability}) và tránh được các cực tiểu cục bộ mà WOA mắc phải. Kết quả cuối cùng của SSA mang lại giải pháp tối ưu tốt hơn (giá trị fitness thấp hơn) so với WOA.
+
+Đồ thị này minh họa rõ ràng lý do các thuật toán lai thường được phát triển: để kết hợp những ưu điểm của các phương pháp khác nhau nhằm cân bằng giữa khả năng khám phá và khai thác không gian tìm kiếm, từ đó cải thiện hiệu suất tổng thể.
 
 \subsection{Kết luận về hiệu suất mô hình}
 
@@ -611,18 +680,16 @@ Trong tương lai, dự án có thể được mở rộng theo các hướng:
 
 \begin{thebibliography}{99} 
 
-    % Tài liệu 1: Về thuật toán WOA (Đã bổ sung nội dung)
+    \bibitem{hieunv_book}
+    Nguyễn Văn Hiếu, \textit{Giáo trình Mạng máy tính và An ninh mạng}, Nhà xuất bản Đại học Đà Nẵng, 2020.
+
+
     \bibitem{woa_paper}
     S. Mirjalili and A. Lewis, ``The Whale Optimization Algorithm,'' \textit{Advances in Engineering Software}, vol. 95, pp. 51--67, 2016.
-
-    % Tài liệu 2: Về thuật toán SSA
-    \bibitem{ssa_paper}
-    M. Jain, V. Singh, and A. Rani, ``A novel nature-inspired algorithm for optimization: Squirrel search algorithm,'' \textit{Swarm and Evolutionary Computation}, vol. 44, pp. 148--175, 2019.
-
     % Tài liệu 3: Về DDoS trong IoT
     \bibitem{ddos_iot_survey}
     I. Butun, S. D. Morgera, and R. Sankar, ``A Survey of Intrusion Detection Systems in Wireless Sensor Networks,'' \textit{IEEE Communications Surveys \& Tutorials}, vol. 16, no. 1, pp. 266--282, 2014.
-
+s
     % Tài liệu 4: Về Random Forest
     \bibitem{random_forest}
     L. Breiman, ``Random Forests,'' \textit{Machine Learning}, vol. 45, no. 1, pp. 5--32, 2001.
@@ -632,8 +699,8 @@ Trong tương lai, dự án có thể được mở rộng theo các hướng:
     NS-3 Consortium, ``NS-3 Network Simulator,'' [Online]. Available: \url{https://www.nsnam.org/}. [Truy cập: 11/2025].
 
     % Tài liệu 6: Sách hoặc giáo trình tham khảo
-    \bibitem{hieunv_book}
-    Nguyễn Văn Hiếu, \textit{Giáo trình Mạng máy tính và An ninh mạng}, Nhà xuất bản Đại học Đà Nẵng, 2020.
+    \bibitem{geek_for_geek}
+    https://www.geeksforgeeks.org/computer-networks/denial-of-service-ddos-attack/
 
 \end{thebibliography}
 
