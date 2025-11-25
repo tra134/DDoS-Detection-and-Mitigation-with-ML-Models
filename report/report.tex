@@ -302,7 +302,6 @@ Với tỷ lệ quá tải gấp 10 lần, mạng sẽ rơi vào trạng thái b
 \section{Quy trình Giảm thiểu Tấn công (Mitigation)}
 
 %
-\section{Phân tích Cơ chế Mitigation dựa trên Machine Learning}
 
 Hệ thống hoạt động theo cơ chế \textbf{Out-of-Band Mitigation} (Giảm thiểu tấn công ngoài luồng). Hệ thống đóng vai trò là bộ não trung tâm, không trực tiếp xử lý gói tin mà điều phối việc ngăn chặn thông qua cơ chế giao tiếp tệp tin với môi trường mô phỏng NS-3.
 
@@ -310,7 +309,7 @@ Hệ thống hoạt động theo cơ chế \textbf{Out-of-Band Mitigation} (Gi�
 Quy trình xử lý tạo thành một vòng lặp khép kín:
 \[ \text{NS-3 (Ghi Log)} \rightarrow \text{Python (Đọc \& Phân tích)} \rightarrow \text{Python (Cập nhật Blacklist)} \rightarrow \text{NS-3 (Chặn IP)} \]
 
-\noindent\textbf{Phân tích chi tiết từng giai đoạn}
+\noindent\textbf{*Phân tích chi tiết từng giai đoạn}
 
 \subsubsection{Giai đoạn 1: Giám sát thời gian thực (Monitoring)}
 Hàm \texttt{watch()} thực hiện cơ chế giám sát tệp log \texttt{live\_flow\_stats.csv} tương tự như lệnh \texttt{tail -f} trong Linux:
