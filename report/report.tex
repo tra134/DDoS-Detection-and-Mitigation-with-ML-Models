@@ -555,26 +555,26 @@ Cụ thể, đồ thị cho thấy:
 \vspace{8mm}
 
 \noindent \textbf{Latency (Độ trễ) so với số lượng Node} \\
-- Xu hướng: Khi số lượng Node tăng từ 10 lên 50, độ trễ tăng dần từ khoảng 0.05 giây lên gần 0.1 giây. \\
+- Xu hướng: Khi số lượng Node tăng từ 10 lên 50, độ trễ tăng dần từ khoảng 0.02 giây lên gần 0.4 giây. \\
 - Nhận xét: Điều này hợp lý vì khi nhiều Node hơn, lưu lượng mạng tăng, dẫn đến khả năng tắc nghẽn cao hơn và thời gian chờ xử lý cũng như thời gian truyền gói tin dài hơn.
 
 \noindent\rule{\textwidth}{0.4pt}
 
 \noindent \textbf{Throughput (Thông lượng) so với số lượng Node} \\
-- Xu hướng: Thông lượng ban đầu rất cao (~1000 Kbps) với ít Node. Khi số lượng Node tăng lên 30–40, thông lượng giảm mạnh và duy trì ở mức thấp (~200 Kbps). Tuy nhiên, khi đạt 50 Node, thông lượng tăng trở lại gần 600 Kbps. \\
-- Nhận xét: Sự sụt giảm ban đầu cho thấy mạng bắt đầu quá tải khi tăng số Node. Điểm tăng ở 50 Node có thể do cơ chế điều khiển tắc nghẽn hoặc định tuyến hoạt động hiệu quả hơn, hoặc do cấu trúc liên kết mạng thay đổi.
+- Xu hướng: Thông lượng ban đầu rất cao (~1000 Kbps) với ít Node. Khi số lượng Node tăng lên 30–40, thông lượng giảm mạnh và duy trì ở mức thấp (~200 Kbps). Tuy nhiên, khi đạt 50 Node, thông lượng tăng trở lại gần 500 Kbps. \\
+- Nhận xét: Sự sụt giảm ban đầu cho thấy mạng bắt đầu quá tải khi tăng số Node. Điểm tăng ở 50 Node do cơ chế điều khiển tắc nghẽn hoạt động hiệu quả hơn.
 
 \noindent\rule{\textwidth}{0.4pt}
 
 \noindent \textbf{PDR (Packet Delivery Ratio - Tỷ lệ gửi gói thành công) so với số lượng Node} \\
-- Xu hướng: PDR giảm mạnh từ 100\% (ở 10 Node) xuống ~10\% khi có 20 Node, sau đó tăng dần đạt ~35\% ở 50 Node. \\
+- Xu hướng: PDR giảm mạnh từ 100\% (ở 10 Node) xuống ~0\% khi có 20 Node, sau đó tăng dần đạt ~21\% ở 50 Node. \\
 - Nhận xét: Sự sụt giảm ban đầu phản ánh tắc nghẽn nghiêm trọng khi tăng Node. Mặc dù có cải thiện nhẹ ở số Node cao, tỷ lệ gói tin bị mất vẫn khá cao, cho thấy hiệu quả truyền tải tổng thể còn hạn chế trong kịch bản tải nặng.
 
 \noindent\rule{\textwidth}{0.4pt}
 
 \noindent \textbf{Accuracy (Độ chính xác) so với số lượng Node} \\
 - Xu hướng: Độ chính xác duy trì ổn định ở mức 100\% trong suốt quá trình tăng số lượng Node. \\
-- Nhận xét: Số lượng Node không ảnh hưởng đến độ chính xác cơ bản của dữ liệu hoặc mô hình. Dù Latency, Throughput và PDR biến động, chất lượng hoặc tính đúng đắn của thông tin cuối cùng vẫn được đảm bảo, nhờ vào các thuật toán kiểm tra lỗi hoặc xử lý dữ liệu mạnh mẽ.
+- Nhận xét: Số lượng Node không ảnh hưởng đến độ chính xác cơ bản của dữ liệu hoặc mô hình. Dù Latency, Throughput và PDR biến động, chất lượng hoặc tính đúng đắn của thông tin cuối cùng vẫn được đảm bảo, nhờ vào các thuật toán kiểm tra lỗi và xử lý dữ liệu mạnh mẽ.
 
 \noindent\rule{\textwidth}{0.4pt}
 
